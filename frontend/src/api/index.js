@@ -26,4 +26,8 @@ export const api = {
   postObjectWeightsReset: () => request('/objects/weights/reset', { method: 'POST', body: '[]' }),
   postObjectReview: (items) => request('/objects/review', { method: 'POST', body: JSON.stringify(items) }),
   postObjectImport: (items) => request('/objects/import', { method: 'POST', body: JSON.stringify(items) }),
+  // Palace images
+  getPalaceList: () => request('/palaces/list'),
+  uploadPalaceImage: (formData) => fetch(`${API_BASE}/palaces/upload`, { method: 'POST', body: formData }).then(r => r.json()).then(r => { if (r.code === 200) return r.data; throw new Error(r.msg) }),
+  deletePalaceImage: (id) => request(`/palaces/${id}`, { method: 'DELETE' }),
 };

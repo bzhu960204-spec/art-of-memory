@@ -134,6 +134,7 @@ export default function ObjectTrainer() {
         totalSeconds: Math.round(totalMs / 1000),
       }
       setSessionStats(stats)
+      setResults(newResults)
       setState(S.COMPLETE)
 
       // 批量提交权重变更
@@ -165,9 +166,9 @@ export default function ObjectTrainer() {
     }
   }, [])
 
-  // ── 评分：熟练（直接翻到下一题，不翻牌）──
+  // ── 评分：熟练（翻牌前直接过，翻牌后也可选）──
   const rateProficient = useCallback(() => {
-    if (state !== S.SHOWING_NUMBER) return
+    if (state !== S.SHOWING_NUMBER && state !== S.SHOWING_ANSWER) return
     const responseMs = Math.round(performance.now() - startTime)
     const card = queue[queueIdx]
     const newResults = [...results, { numberString: card.numberString, rating: 1, responseMs }]
@@ -217,6 +218,7 @@ export default function ObjectTrainer() {
         if (e.code === 'Space' || e.key === 'ArrowDown') { e.preventDefault(); flipCard() }
         if (e.key === 'Enter' || e.key === '1') { e.preventDefault(); rateProficient() }
       } else if (state === S.SHOWING_ANSWER) {
+        if (e.key === '1' || e.key === 'Enter') { e.preventDefault(); rateProficient() }
         if (e.key === '2') rateAfterFlip(2)
         if (e.key === '3') rateAfterFlip(3)
       }
@@ -237,39 +239,75 @@ export default function ObjectTrainer() {
 
   // ── 完成画面 ──
   if (state === S.COMPLETE && sessionStats) {
+    // 每个 numberString 取本轮最差评分（3>2>1），体现曾经卡住过的词
+    const worstRatingMap = {}
+    results.forEach(r => {
+      const prev = worstRatingMap[r.numberString]
+      if (!prev || r.rating > prev) worstRatingMap[r.numberString] = r.rating
+    })
+    const codeMap = Object.fromEntries(allCodes.map(c => [c.numberString, c]))
+    const grouped = [
+      { rating: 1, label: '✅ 认识', count: sessionStats.proficient,  border: 'border-green-800',  bg: 'bg-green-900/20',  numColor: 'text-green-400',  items: [] },
+      { rating: 2, label: '😅 生疏', count: sessionStats.rusty,     border: 'border-yellow-800', bg: 'bg-yellow-900/20', numColor: 'text-yellow-400', items: [] },
+      { rating: 3, label: '❌ 不认识', count: sessionStats.unknown,  border: 'border-red-900',    bg: 'bg-red-900/20',    numColor: 'text-red-400',    items: [] },
+    ]
+    Object.entries(worstRatingMap).forEach(([ns, rating]) => {
+      const code = codeMap[ns]
+      if (code) { const g = grouped.find(g => g.rating === rating); if (g) g.items.push(code) }
+    })
+    grouped.forEach(g => g.items.sort((a, b) => a.numberString.localeCompare(b.numberString)))
+
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8">
-        <h2 className="text-3xl font-bold text-cyan-400 mb-2">训练完成!</h2>
-        <p className="text-gray-500 text-sm mb-8">权重已自动更新，下次高权重题目将优先出现</p>
-        <div className="grid grid-cols-2 gap-4 mb-8 w-full max-w-sm">
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
-            <div className="text-4xl font-bold text-green-400">{Math.round(sessionStats.accuracyRate * 100)}%</div>
-            <div className="text-gray-400 text-sm mt-1">熟练率</div>
+      <div className="flex flex-col items-center h-full p-6 overflow-y-auto">
+        <h2 className="text-3xl font-bold text-cyan-400 mb-1 flex-shrink-0">训练完成!</h2>
+        <p className="text-gray-500 text-sm mb-6 flex-shrink-0">权重已自动更新，下次高权重题目将优先出现</p>
+
+        {/* 统计概览 */}
+        <div className="grid grid-cols-4 gap-3 mb-8 w-full max-w-lg flex-shrink-0">
+          <div className="bg-gray-900 rounded-xl p-4 text-center border border-gray-800">
+            <div className="text-3xl font-bold text-green-400">{Math.round(sessionStats.accuracyRate * 100)}%</div>
+            <div className="text-gray-400 text-xs mt-1">熟练率</div>
           </div>
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
-            <div className="text-4xl font-bold text-yellow-400">{sessionStats.avgResponseMs}ms</div>
-            <div className="text-gray-400 text-sm mt-1">平均反应</div>
-          </div>
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 text-center border border-gray-800">
             <div className="text-3xl font-bold text-green-300">{sessionStats.proficient}</div>
-            <div className="text-gray-400 text-sm mt-1">✓ 熟练</div>
+            <div className="text-gray-400 text-xs mt-1">✅ 认识</div>
           </div>
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 text-center border border-gray-800">
             <div className="text-3xl font-bold text-yellow-300">{sessionStats.rusty}</div>
-            <div className="text-gray-400 text-sm mt-1">😅 生疏</div>
+            <div className="text-gray-400 text-xs mt-1">😅 生疏</div>
           </div>
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
+          <div className="bg-gray-900 rounded-xl p-4 text-center border border-gray-800">
             <div className="text-3xl font-bold text-red-400">{sessionStats.unknown}</div>
-            <div className="text-gray-400 text-sm mt-1">❌ 不认识</div>
-          </div>
-          <div className="bg-gray-900 rounded-xl p-5 text-center border border-gray-800">
-            <div className="text-3xl font-bold text-purple-400">{sessionStats.totalSeconds}s</div>
-            <div className="text-gray-400 text-sm mt-1">总耗时</div>
+            <div className="text-gray-400 text-xs mt-1">❌ 不认识</div>
           </div>
         </div>
+
+        {/* 分组复习列表 */}
+        <div className="w-full max-w-lg space-y-5 flex-shrink-0">
+          {grouped.filter(g => g.items.length > 0).map(g => (
+            <div key={g.rating} className={`rounded-2xl border ${g.border} ${g.bg} p-4`}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-semibold text-gray-200">{g.label}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-black/30 ${g.numColor}`}>{g.items.length} 个</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {g.items.map(code => (
+                  <div key={code.numberString} className="flex items-center gap-3 bg-black/20 rounded-xl px-3 py-2">
+                    <span className={`font-mono font-bold text-lg w-8 flex-shrink-0 ${g.numColor}`}>{code.numberString}</span>
+                    <div className="min-w-0">
+                      <div className="text-white font-medium text-sm truncate">{code.objectName}</div>
+                      {code.hint && <div className="text-gray-500 text-xs truncate">{code.hint}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
         <button
           onClick={loadCodes}
-          className="px-8 py-3 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors"
+          className="mt-8 mb-4 px-8 py-3 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors flex-shrink-0"
         >
           再来一轮
         </button>
@@ -379,6 +417,15 @@ export default function ObjectTrainer() {
       {/* 评分按钮 */}
       <div className="flex gap-4">
         <button
+          onClick={rateProficient}
+          className="flex flex-col items-center px-7 py-3 bg-green-700/80 hover:bg-green-600 text-white rounded-xl transition-colors shadow-lg"
+          title="1"
+        >
+          <span className="text-xl">✅</span>
+          <span className="font-semibold text-sm mt-1">认识</span>
+          <span className="text-xs text-green-300 opacity-70 mt-0.5">权重 -1</span>
+        </button>
+        <button
           onClick={() => rateAfterFlip(2)}
           className="flex flex-col items-center px-7 py-3 bg-yellow-700/80 hover:bg-yellow-600 text-white rounded-xl transition-colors shadow-lg"
           title="2"
@@ -398,7 +445,7 @@ export default function ObjectTrainer() {
         </button>
       </div>
 
-      <p className="text-xs text-gray-600 mt-5">2 → 生疏 &nbsp;·&nbsp; 3 → 不认识</p>
+      <p className="text-xs text-gray-600 mt-5">1 → 认识 &nbsp;·&nbsp; 2 → 生疏 &nbsp;·&nbsp; 3 → 不认识</p>
     </div>
   )
 }

@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../api'
 
+const IMPORT_TEMPLATE = `[
+  {"numberString": "00", "objectName": "铃铛", "hint": "铃铛摇一摇"},
+  {"numberString": "01", "objectName": "烟斗", "hint": ""},
+  {"numberString": "02", "objectName": "恩人", "hint": ""},
+  {"numberString": "03", "objectName": "扇子", "hint": ""},
+  {"numberString": "04", "objectName": "司机", "hint": ""}
+]`
+
 /**
  * 解析用户上传的 JSON，统一转换为
  * [{ numberString, objectName, hint }] 格式。
@@ -34,7 +42,9 @@ export default function ObjectCrud() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [importing, setImporting] = useState(false)
-  const fileInputRef = useRef(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const loadCodes = useCallback(async () => {
     setLoading(true)
@@ -100,20 +110,31 @@ export default function ObjectCrud() {
   }
 
   // ── 导入 JSON ──
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''  // 允许重复选同一文件
+  const openImportModal = () => {
+    setImportText('')
+    setCopied(false)
+    setShowImportModal(true)
+  }
+
+  const copyTemplate = () => {
+    navigator.clipboard.writeText(IMPORT_TEMPLATE).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const handleImportConfirm = async () => {
+    if (!importText.trim()) return
     setImporting(true)
     try {
-      const raw = await file.text()
-      const items = parseImportJson(raw)
+      const items = parseImportJson(importText.trim())
       if (items.length === 0) { showToast('JSON 中未找到有效编码', 'error'); return }
       await api.postObjectImport(items)
       await loadCodes()
+      setShowImportModal(false)
       showToast(`成功导入 ${items.length} 条编码`)
     } catch (err) {
-      showToast(err.message?.includes('JSON') ? 'JSON 格式错误，请检查文件' : '导入失败', 'error')
+      showToast(err.message?.includes('JSON') ? 'JSON 格式错误，请检查内容' : '导入失败', 'error')
     } finally {
       setImporting(false)
     }
@@ -144,6 +165,61 @@ export default function ObjectCrud() {
         </div>
       )}
 
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-4 p-6">
+            <h3 className="text-lg font-bold text-cyan-400">导入 JSON 编码</h3>
+
+            {/* Template */}
+            <div className="bg-gray-950 border border-gray-800 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400 font-medium">导入模板（可直接复制修改）</span>
+                <button
+                  onClick={copyTemplate}
+                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-xs text-gray-300 rounded-lg transition-colors"
+                >
+                  {copied ? '已复制 ✓' : '复制模板'}
+                </button>
+              </div>
+              <pre className="text-xs text-cyan-500 overflow-x-auto whitespace-pre-wrap">{IMPORT_TEMPLATE}</pre>
+              <p className="mt-2 text-xs text-gray-500">
+                也支持简写格式：<code className="text-cyan-600">{`{"00":"铃铛","01":"烟斗"}`}</code>
+              </p>
+            </div>
+
+            {/* Paste area */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">粘贴你的 JSON（将覆盖对应编号的数据）</label>
+              <textarea
+                autoFocus
+                className="w-full h-48 bg-gray-950 border border-gray-700 focus:border-cyan-600 rounded-xl p-3 text-sm text-white font-mono resize-none outline-none transition-colors"
+                placeholder="在此粘贴 JSON..."
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleImportConfirm}
+                disabled={importing || !importText.trim()}
+                className="px-5 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
+              >
+                {importing ? '导入中...' : '确认导入'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
@@ -158,29 +234,12 @@ export default function ObjectCrud() {
             导出 JSON
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            className="px-4 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
+            onClick={openImportModal}
+            className="px-4 py-2 bg-cyan-700 hover:bg-cyan-600 text-white text-sm rounded-lg transition-colors"
           >
-            {importing ? '导入中...' : '导入 JSON'}
+            导入 JSON
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
         </div>
-      </div>
-
-      {/* JSON 格式说明 */}
-      <div className="mb-3 px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-xs text-gray-500 flex-shrink-0">
-        <span className="text-gray-400 font-medium">支持格式：</span>
-        {'  '}
-        <code className="text-cyan-600">{`[{"numberString":"00","objectName":"铃铛","hint":"..."}]`}</code>
-        {'  或  '}
-        <code className="text-cyan-600">{`{"00":"铃铛","05":"莲藕"}`}</code>
       </div>
 
       {/* Table */}

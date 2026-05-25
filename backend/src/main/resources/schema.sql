@@ -42,3 +42,13 @@ CREATE TABLE words (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     word VARCHAR(20) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS palace_images (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(50),
+    file_size BIGINT,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
