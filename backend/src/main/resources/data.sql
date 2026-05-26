@@ -1,5 +1,10 @@
+﻿-- ============================================================
+-- 初始种子数据 - 仅在表为空时插入，不会覆盖用户自定义数据
+-- ============================================================
+
 -- PAO Codes (00-99) 经典中文数字编码系统
-INSERT INTO pao_codes (number_string, person, action, object) VALUES
+INSERT INTO pao_codes (number_string, person, action, object)
+SELECT C1, C2, C3, C4 FROM (VALUES
 ('00', '望远镜', '观察', '星星'),
 ('01', '树', '生长', '树叶'),
 ('02', '鹅', '游泳', '湖水'),
@@ -99,10 +104,12 @@ INSERT INTO pao_codes (number_string, person, action, object) VALUES
 ('96', '酒楼', '烹饪', '菜肴'),
 ('97', '旧旗', '飘扬', '城墙'),
 ('98', '酒吧', '调制', '鸡尾酒'),
-('99', '舅舅', '举起', '奖杯');
+('99', '舅舅', '举起', '奖杯')
+) WHERE (SELECT COUNT(*) FROM pao_codes) = 0;
 
 -- 具象词汇库 (60个经典记忆比赛用具象名词)
-INSERT INTO words (word) VALUES
+INSERT INTO words (word)
+SELECT C1 FROM (VALUES
 ('飞盘'), ('仙人掌'), ('潜艇'), ('灯塔'), ('火箭'),
 ('蜡烛'), ('锚'), ('手风琴'), ('望远镜'), ('风车'),
 ('降落伞'), ('章鱼'), ('吉他'), ('高跷'), ('消防车'),
@@ -114,11 +121,13 @@ INSERT INTO words (word) VALUES
 ('拖拉机'), ('雪人'), ('鲸鱼'), ('竹子'), ('指南针'),
 ('铃铛'), ('弹弓'), ('风筝'), ('骆驼'), ('水晶球'),
 ('手榴弹'), ('独角兽'), ('电吉他'), ('南瓜'), ('钻石'),
-('树屋'), ('冲浪板'), ('大炮'), ('孔雀'), ('变色龙');
+('树屋'), ('冲浪板'), ('大炮'), ('孔雀'), ('变色龙')
+) WHERE (SELECT COUNT(*) FROM words) = 0;
 
 -- 两位数物品编码系统 (00-99 Object System) 初始数据
 -- 编码策略：结合数字谐音（líng/yī/èr/sān/sì/wǔ/liù/qī/bā/jiǔ）联想
-INSERT INTO object_codes (number_string, object_name, hint, weight) VALUES
+INSERT INTO object_codes (number_string, object_name, hint, weight)
+SELECT C1, C2, C3, C4 FROM (VALUES
 ('00', '铃铛', '零零→líng líng→铃铛（bell）', 1),
 ('01', '雨衣', '零一→líng yī→零件+椅→遮雨的衣', 1),
 ('02', '鳄鱼', '零二→líng èr→líng鳄鱼张嘴', 1),
@@ -218,4 +227,5 @@ INSERT INTO object_codes (number_string, object_name, hint, weight) VALUES
 ('96', '酒楼', '九六→jiǔ liù→jiǔ酒/酒楼六层', 1),
 ('97', '旗帜', '九七→jiǔ qī→jiǔ旧/旗帜七彩', 1),
 ('98', '鸡尾酒', '九八→jiǔ bā→jiǔ酒/鸡尾酒巴台', 1),
-('99', '舅舅', '九九→jiǔ jiǔ→jiǔ舅/舅舅重阳', 1);
+('99', '舅舅', '九九→jiǔ jiǔ→jiǔ舅/舅舅重阳', 1)
+) WHERE (SELECT COUNT(*) FROM object_codes) = 0;

@@ -22,7 +22,7 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
   sql:
     init:
-      mode: always
+      mode: embedded
       encoding: UTF-8
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql

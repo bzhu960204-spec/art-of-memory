@@ -1,10 +1,4 @@
-DROP TABLE IF EXISTS wrong_items;
-DROP TABLE IF EXISTS train_records;
-DROP TABLE IF EXISTS object_codes;
-DROP TABLE IF EXISTS pao_codes;
-DROP TABLE IF EXISTS words;
-
-CREATE TABLE pao_codes (
+CREATE TABLE IF NOT EXISTS pao_codes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     number_string VARCHAR(2) NOT NULL UNIQUE,
     person VARCHAR(50) NOT NULL,
@@ -12,7 +6,7 @@ CREATE TABLE pao_codes (
     object VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE object_codes (
+CREATE TABLE IF NOT EXISTS object_codes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     number_string VARCHAR(2) NOT NULL UNIQUE,
     object_name VARCHAR(100) NOT NULL,
@@ -20,7 +14,7 @@ CREATE TABLE object_codes (
     weight INT DEFAULT 1
 );
 
-CREATE TABLE train_records (
+CREATE TABLE IF NOT EXISTS train_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     module_type VARCHAR(30) NOT NULL,
     duration_seconds INT NOT NULL,
@@ -30,7 +24,7 @@ CREATE TABLE train_records (
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE wrong_items (
+CREATE TABLE IF NOT EXISTS wrong_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     module_type VARCHAR(30) NOT NULL,
     item_content VARCHAR(255) NOT NULL,
@@ -38,7 +32,7 @@ CREATE TABLE wrong_items (
     last_failed_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE words (
+CREATE TABLE IF NOT EXISTS words (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     word VARCHAR(20) NOT NULL
 );
