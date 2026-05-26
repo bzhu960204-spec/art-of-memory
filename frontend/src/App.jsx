@@ -3,6 +3,7 @@ import PaoTrainer from './modules/PaoTrainer'
 import WordsRecall from './modules/WordsRecall'
 import CardMemorization from './modules/CardMemorization'
 import SpeedNumbers from './modules/SpeedNumbers'
+import NumberMemory from './modules/NumberMemory'
 import ObjectTrainer from './modules/ObjectTrainer'
 import ObjectCrud from './modules/ObjectCrud'
 import PalaceGallery from './modules/PalaceGallery'
@@ -13,6 +14,7 @@ const modules = [
   { id: 'words', name: '随机词组闪训', icon: '📝', desc: 'Words Recall' },
   { id: 'cards', name: '虚拟马拉松扑克', icon: '🃏', desc: 'Card Memorization' },
   { id: 'numbers', name: '数字马拉松', icon: '⚡', desc: 'Speed Numbers' },
+  { id: 'numMemory', name: '数字记忆训练', icon: '🧠', desc: 'Number Memory' },
   { id: 'palace', name: '记忆宫殿图库', icon: '🏛️', desc: 'Memory Palace Gallery' },
 ]
 
@@ -28,6 +30,7 @@ export default function App() {
       case 'words': return <WordsRecall />
       case 'cards': return <CardMemorization />
       case 'numbers': return <SpeedNumbers />
+      case 'numMemory': return <NumberMemory />
       case 'palace': return <PalaceGallery />
       default: return <PaoTrainer />
     }
