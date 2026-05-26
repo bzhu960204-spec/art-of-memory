@@ -5,6 +5,7 @@ import com.memory.entity.WrongItem;
 import com.memory.repository.ObjectCodeRepository;
 import com.memory.repository.WrongItemRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +27,7 @@ public class ObjectService {
         return objectCodeRepository.findAllByOrderByNumberStringAsc();
     }
 
+    @Transactional
     public ObjectCode update(String numberString, UpdateRequest req) {
         ObjectCode code = objectCodeRepository.findByNumberString(numberString)
                 .orElseThrow(() -> new IllegalArgumentException("Not found: " + numberString));
@@ -34,6 +36,7 @@ public class ObjectService {
         return objectCodeRepository.save(code);
     }
 
+    @Transactional
     public void batchUpdateWeights(List<WeightUpdate> updates) {
         for (WeightUpdate u : updates) {
             objectCodeRepository.findByNumberString(u.getNumberString()).ifPresent(code -> {
@@ -44,12 +47,14 @@ public class ObjectService {
         }
     }
 
+    @Transactional
     public void resetWeights() {
         List<ObjectCode> all = objectCodeRepository.findAll();
         all.forEach(c -> c.setWeight(1));
         objectCodeRepository.saveAll(all);
     }
 
+    @Transactional
     public int batchImport(List<ImportItem> items) {
         int updated = 0;
         for (ImportItem item : items) {
@@ -69,6 +74,7 @@ public class ObjectService {
         return updated;
     }
 
+    @Transactional
     public void processReview(List<ReviewItem> items) {
         for (ReviewItem item : items) {
             if (item.getRating() >= 2) {

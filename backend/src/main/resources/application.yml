@@ -17,12 +17,9 @@ spring:
       path: /h2-console
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: false
     database-platform: org.hibernate.dialect.H2Dialect
   sql:
     init:
-      mode: embedded
-      encoding: UTF-8
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
+      mode: never
