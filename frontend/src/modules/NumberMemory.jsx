@@ -4,7 +4,7 @@ const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESUL
 const STORAGE_KEY = 'numMemory_records'
 const MAX_HISTORY = 20
 
-const DIGIT_OPTIONS = [3, 4, 5, 6, 8, 10, 15, 20, 30, 40, 50]
+const DIGIT_OPTIONS = [10, 15, 20, 30, 40, 50, 80, 100]
 
 function generateNumber(digits) {
   let result = String(Math.floor(Math.random() * 9) + 1)
@@ -41,7 +41,8 @@ function formatNumber(num) {
 
 export default function NumberMemory() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [digits, setDigits] = useState(6)
+  const [digits, setDigits] = useState(10)
+  const [customDigits, setCustomDigits] = useState('')
   const [number, setNumber] = useState('')
   const [userInput, setUserInput] = useState('')
   const [isCorrect, setIsCorrect] = useState(false)
@@ -110,7 +111,7 @@ export default function NumberMemory() {
 
           <div className="mb-6">
             <label className="block text-sm text-gray-400 mb-3">选择数字位数</label>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3">
               {DIGIT_OPTIONS.map(d => {
                 const recs = allRecords[String(d)] || []
                 const best = recs.filter(r => r.correct)
@@ -118,22 +119,38 @@ export default function NumberMemory() {
                 return (
                   <button
                     key={d}
-                    onClick={() => setDigits(d)}
+                    onClick={() => { setDigits(d); setCustomDigits('') }}
                     className={`py-3 rounded-lg text-sm font-bold transition-all ${
-                      digits === d
+                      digits === d && customDigits === ''
                         ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/50'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
                     <div>{d} 位</div>
                     {bestMs && (
-                      <div className={`text-xs mt-0.5 font-mono ${digits === d ? 'text-cyan-200' : 'text-yellow-500'}`}>
+                      <div className={`text-xs mt-0.5 font-mono ${digits === d && customDigits === '' ? 'text-cyan-200' : 'text-yellow-500'}`}>
                         {formatTime(bestMs)}
                       </div>
                     )}
                   </button>
                 )
               })}
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400 whitespace-nowrap">自定义位数</label>
+              <input
+                type="number"
+                min={9}
+                value={customDigits}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setCustomDigits(v)
+                  const n = parseInt(v, 10)
+                  if (!isNaN(n) && n >= 9) setDigits(n)
+                }}
+                placeholder="输入位数（≥9）"
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm font-mono focus:border-cyan-500 focus:outline-none transition-colors placeholder-gray-600"
+              />
             </div>
           </div>
 
