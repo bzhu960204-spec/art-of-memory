@@ -50,9 +50,20 @@ public class PalaceController {
             return Result.error("文件不能为空");
         }
 
+        // Server-side MIME validation via magic bytes
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             return Result.error("只能上传图片文件");
+        }
+        // Verify actual file content (magic bytes check)
+        byte[] header = new byte[8];
+        try (var is = file.getInputStream()) {
+            if (is.read(header) < 4) {
+                return Result.error("文件内容无效");
+            }
+        }
+        if (!isValidImageMagicBytes(header)) {
+            return Result.error("文件内容不是有效的图片格式");
         }
 
         // 限制文件大小 10MB
@@ -122,5 +133,28 @@ public class PalaceController {
         }
         repository.delete(image);
         return Result.success("已删除");
+    }
+
+    /**
+     * Check magic bytes to verify actual image format:
+     * JPEG: FF D8 FF
+     * PNG: 89 50 4E 47
+     * GIF: 47 49 46 38
+     * WEBP: 52 49 46 46 (RIFF) + WEBP at offset 8
+     * BMP: 42 4D
+     */
+    private boolean isValidImageMagicBytes(byte[] header) {
+        if (header.length < 4) return false;
+        // JPEG
+        if ((header[0] & 0xFF) == 0xFF && (header[1] & 0xFF) == 0xD8 && (header[2] & 0xFF) == 0xFF) return true;
+        // PNG
+        if ((header[0] & 0xFF) == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) return true;
+        // GIF
+        if (header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x38) return true;
+        // BMP
+        if (header[0] == 0x42 && header[1] == 0x4D) return true;
+        // WEBP (RIFF header)
+        if (header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46) return true;
+        return false;
     }
 }

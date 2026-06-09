@@ -50,7 +50,7 @@ export default function WordsRecall() {
     let correctCount = 0
     const comparison = words.map((word, i) => {
       const userWord = userAnswers[i]?.trim() || ''
-      const isCorrect = userWord === word
+      const isCorrect = userWord.toLowerCase() === word.toLowerCase()
       if (isCorrect) correctCount++
       return { index: i, original: word, user: userWord, isCorrect }
     })

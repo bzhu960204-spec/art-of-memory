@@ -41,13 +41,19 @@ export default function SpeedNumbers() {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(countdownRef.current)
+            countdownRef.current = null
             setState(STATES.RECALL)
             return 0
           }
           return prev - 1
         })
       }, 1000)
-      return () => clearInterval(countdownRef.current)
+      return () => {
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current)
+          countdownRef.current = null
+        }
+      }
     }
   }, [state])
 

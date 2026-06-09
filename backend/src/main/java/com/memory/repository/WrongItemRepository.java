@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface WrongItemRepository extends JpaRepository<WrongItem, Long> {
     List<WrongItem> findByModuleTypeOrderByErrorCountDesc(String moduleType);
+    List<WrongItem> findAllByOrderByErrorCountDesc();
     Optional<WrongItem> findByModuleTypeAndItemContent(String moduleType, String itemContent);
 }

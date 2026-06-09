@@ -101,6 +101,21 @@ export default function ObjectTrainer() {
 
   useEffect(() => { loadCodes() }, [loadCodes])
 
+  // ── 离开页面时保存未提交的权重变更 ──
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const weightUpdates = Object.entries(pendingWeights.current).map(([num, delta]) => ({
+        numberString: num, delta,
+      }))
+      if (weightUpdates.length > 0) {
+        navigator.sendBeacon('/api/objects/weights',
+          new Blob([JSON.stringify(weightUpdates)], { type: 'application/json' }))
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
   // ── 计时器 RAF ──
   useEffect(() => {
     if (state === S.SHOWING_NUMBER) {
