@@ -1,7 +1,9 @@
 package com.memory.service;
 
+import com.memory.entity.DailyChallenge;
 import com.memory.entity.StreakRecord;
 import com.memory.entity.TrainRecord;
+import com.memory.repository.DailyChallengeRepository;
 import com.memory.repository.StreakRecordRepository;
 import com.memory.repository.TrainRecordRepository;
 import org.springframework.stereotype.Service;
@@ -15,11 +17,14 @@ public class TrainRecordService {
 
     private final TrainRecordRepository trainRecordRepository;
     private final StreakRecordRepository streakRecordRepository;
+    private final DailyChallengeRepository dailyChallengeRepository;
 
     public TrainRecordService(TrainRecordRepository trainRecordRepository,
-                              StreakRecordRepository streakRecordRepository) {
+                              StreakRecordRepository streakRecordRepository,
+                              DailyChallengeRepository dailyChallengeRepository) {
         this.trainRecordRepository = trainRecordRepository;
         this.streakRecordRepository = streakRecordRepository;
+        this.dailyChallengeRepository = dailyChallengeRepository;
     }
 
     @Transactional
@@ -30,7 +35,36 @@ public class TrainRecordService {
         }
         TrainRecord saved = trainRecordRepository.save(record);
         updateStreak();
+        updateDailyChallenge(record);
         return saved;
+    }
+
+    private void updateDailyChallenge(TrainRecord record) {
+        LocalDate today = LocalDate.now();
+        DailyChallenge challenge = dailyChallengeRepository.findByChallengeDate(today)
+                .orElseGet(() -> {
+                    DailyChallenge dc = new DailyChallenge();
+                    dc.setChallengeDate(today);
+                    String[] modules = {"NUMBERS", "WORDS", "CARDS", "PAO", "OBJECT"};
+                    dc.setModuleType(modules[today.getDayOfYear() % modules.length]);
+                    dc.setSeed(today.toEpochDay());
+                    dc.setAttempts(0);
+                    return dailyChallengeRepository.save(dc);
+                });
+
+        // Update daily challenge if module type matches
+        if (challenge.getModuleType().equals(record.getModuleType())) {
+            challenge.setAttempts(challenge.getAttempts() + 1);
+            double accuracy = record.getAccuracyRate() != null ? record.getAccuracyRate() : 0;
+            if (challenge.getBestAccuracy() == null || accuracy > challenge.getBestAccuracy()) {
+                challenge.setBestAccuracy(accuracy);
+            }
+            int timeSeconds = record.getDurationSeconds() != null ? record.getDurationSeconds() : 0;
+            if (timeSeconds > 0 && (challenge.getBestTimeSeconds() == null || timeSeconds < challenge.getBestTimeSeconds())) {
+                challenge.setBestTimeSeconds(timeSeconds);
+            }
+            dailyChallengeRepository.save(challenge);
+        }
     }
 
     public List<TrainRecord> getByModule(String moduleType) {

@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { api } from '../api'
 
 export default function ChallengeAchievements() {
-  const [tab, setTab] = useState('daily') // 'daily' | 'achievements' | 'streak'
+  const [tab, setTab] = useState('daily') // 'daily' | 'achievements' | 'streak' | 'records'
   const [daily, setDaily] = useState(null)
   const [history, setHistory] = useState([])
   const [streak, setStreak] = useState(null)
   const [achievements, setAchievements] = useState([])
+  const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -16,16 +17,18 @@ export default function ChallengeAchievements() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [d, h, s, a] = await Promise.all([
+      const [d, h, s, a, r] = await Promise.all([
         api.getDailyChallenge(),
         api.getChallengeHistory(),
         api.getStreak(),
         api.getAchievements(),
+        api.getRecords(),
       ])
       setDaily(d)
       setHistory(h)
       setStreak(s)
       setAchievements(a)
+      setRecords(r)
     } catch (e) {
       console.error('Failed to load challenge data:', e)
     }
@@ -58,6 +61,7 @@ export default function ChallengeAchievements() {
       <div className="flex gap-2 mb-6">
         {[
           { id: 'daily', label: '📅 每日挑战' },
+          { id: 'records', label: '📋 训练记录' },
           { id: 'achievements', label: '🏆 成就徽章' },
           { id: 'streak', label: '🔥 连续训练' },
         ].map(t => (
@@ -133,6 +137,36 @@ export default function ChallengeAchievements() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Training Records */}
+      {tab === 'records' && (
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <h3 className="text-lg font-semibold text-white mb-4">最近训练记录</h3>
+          {records.length === 0 ? (
+            <div className="text-gray-500 text-center py-4">暂无训练记录</div>
+          ) : (
+            <div className="space-y-2">
+              {records.map(r => (
+                <div key={r.id} className="flex items-center gap-4 bg-gray-800/50 rounded-lg px-4 py-3">
+                  <span className="text-gray-400 font-mono text-sm w-40">
+                    {r.createdTime ? r.createdTime.replace('T', ' ').slice(0, 16) : ''}
+                  </span>
+                  <span className="text-white font-medium flex-1">
+                    {MODULE_NAMES[r.moduleType] || r.moduleType}
+                  </span>
+                  <span className="text-gray-400 text-sm">{r.totalItems}项</span>
+                  <span className="text-gray-400 text-sm">{r.durationSeconds}秒</span>
+                  {r.accuracyRate != null && (
+                    <span className={`font-bold ${r.accuracyRate >= 0.8 ? 'text-green-400' : r.accuracyRate >= 0.5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {Math.round(r.accuracyRate * 100)}%
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
