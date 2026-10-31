@@ -55,7 +55,9 @@ class PalaceControllerTest {
         var file = new MockMultipartFile("file", "notes.txt", "text/plain", "hello".getBytes());
 
         mvc.perform(multipart("/api/palaces/upload").file(file))
-                .andExpect(jsonPath("$.code").value(500));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.msg").value("只能上传图片文件"));
     }
 
     @Test
@@ -63,7 +65,15 @@ class PalaceControllerTest {
         var file = new MockMultipartFile("file", "fake.png", "image/png", "not really a png".getBytes());
 
         mvc.perform(multipart("/api/palaces/upload").file(file))
-                .andExpect(jsonPath("$.code").value(500));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    void deletingUnknownImageIsNotFound() throws Exception {
+        mvc.perform(delete("/api/palaces/999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404));
     }
 
     @Test

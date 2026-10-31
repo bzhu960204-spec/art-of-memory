@@ -1,14 +1,22 @@
 package com.memory.controller;
 
 import com.memory.common.Result;
+import com.memory.dto.ObjectImportItem;
+import com.memory.dto.ObjectUpdateRequest;
+import com.memory.dto.ReviewItem;
+import com.memory.dto.WeightUpdate;
 import com.memory.entity.ObjectCode;
 import com.memory.service.ObjectService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/objects")
+@Validated
 public class ObjectController {
 
     private final ObjectService objectService;
@@ -23,13 +31,13 @@ public class ObjectController {
     }
 
     @PutMapping("/{numberString}")
-    public Result<ObjectCode> update(@PathVariable String numberString,
-                                     @RequestBody ObjectService.UpdateRequest req) {
+    public Result<ObjectCode> update(@PathVariable @Pattern(regexp = "\\d{2}") String numberString,
+                                     @Valid @RequestBody ObjectUpdateRequest req) {
         return Result.success(objectService.update(numberString, req));
     }
 
     @PostMapping("/weights")
-    public Result<String> batchUpdateWeights(@RequestBody List<ObjectService.WeightUpdate> updates) {
+    public Result<String> batchUpdateWeights(@RequestBody List<@Valid WeightUpdate> updates) {
         objectService.batchUpdateWeights(updates);
         return Result.success("Weights updated");
     }
@@ -41,13 +49,13 @@ public class ObjectController {
     }
 
     @PostMapping("/review")
-    public Result<String> submitReview(@RequestBody List<ObjectService.ReviewItem> items) {
+    public Result<String> submitReview(@RequestBody List<@Valid ReviewItem> items) {
         objectService.processReview(items);
         return Result.success("Review saved");
     }
 
     @PostMapping("/import")
-    public Result<String> batchImport(@RequestBody List<ObjectService.ImportItem> items) {
+    public Result<String> batchImport(@RequestBody List<@Valid ObjectImportItem> items) {
         int count = objectService.batchImport(items);
         return Result.success("Imported " + count + " items");
     }

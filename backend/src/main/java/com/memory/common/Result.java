@@ -21,6 +21,10 @@ public class Result<T> {
         return new Result<>(500, msg, null);
     }
 
+    public static <T> Result<T> error(int code, String msg) {
+        return new Result<>(code, msg, null);
+    }
+
     public int getCode() { return code; }
     public void setCode(int code) { this.code = code; }
     public String getMsg() { return msg; }

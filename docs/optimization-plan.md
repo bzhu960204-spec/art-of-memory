@@ -92,38 +92,43 @@
 
 ## 3. 后端架构与代码质量
 
-- [ ] **A1 (P1) 业务逻辑下沉到 Service 层**
+- [x] **A1 (P1) 业务逻辑下沉到 Service 层**
   - `ChallengeController`（成就定义、连续训练、挑战）、`AnalyticsController`、`PalaceController`（文件存储）都在 Controller 里写业务逻辑。
   - 建议拆出 `ChallengeService`、`AchievementService`、`AnalyticsService`、`PalaceStorageService`。
+  - ✅ 已完成：`StreakService`、`DailyChallengeService`、`AchievementService`、`AnalyticsService`、`PalaceService`、`WrongItemService`，Controller 只做参数校验和转发。
 
 - [x] **A2 (P1) 模块类型使用枚举统一管理**
   - `"PAO"`, `"OBJECT"`, `"NUMBERS"` 等字符串散落在前后端多处；每日挑战轮换数组重复两次。
   - 建议后端定义 `ModuleType` 枚举（含是否参与每日挑战等元数据），可提供 `GET /api/meta/modules` 供前端使用。
   - ✅ 后端已完成（`common/ModuleType`，`/analytics/bests` 已覆盖全部 9 个模块）；前端常量统一见 F1。
 
-- [ ] **A3 (P1) 请求 DTO + Bean Validation**
+- [x] **A3 (P1) 请求 DTO + Bean Validation**
   - 引入 `spring-boot-starter-validation`，对 `limit`、`days`、`numberString`（`^\d{2}$`）、`rating`（1~3）、`accuracy`（0~1）等加约束；`/pao/random?limit=` 与 `/words/random?limit=` 目前无上限。
   - `submitDaily` 使用 `Map<String,Object>` 接收并强转 `Number`，类型错误会变成 500。
-  - 🔶 部分完成：`/records/save` 已使用 `TrainRecordRequest` + `@Valid`，非法参数返回 400；其余接口待第 4 步处理。
+  - ✅ 已完成：所有请求体使用 DTO + `@Valid`，`limit`/`days`/编号/评分等参数均有范围校验，非法参数返回 400。
 
-- [ ] **A4 (P1) 统一的错误处理与 HTTP 状态码**
+- [x] **A4 (P1) 统一的错误处理与 HTTP 状态码**
   - [`Result.error`](../backend/src/main/java/com/memory/common/Result.java) 固定 `code=500`；Controller 中直接 `return Result.error(...)` 时 HTTP 状态是 200，而异常处理器返回 400/500，表现不一致。
   - `handleGeneral` 把 `e.getMessage()` 原样返回给前端，可能泄露内部信息。建议：业务异常类 + 错误码，未知异常只返回通用提示并记录日志。
   - 🔶 测试中新发现并已修复：兜底的 `Exception` 处理器会把不存在的接口（404）、方法不支持（405）也变成 500，现已保留原始状态码。
+  - ✅ 已完成：新增 `BusinessException`（400/404），响应体 `code` 与 HTTP 状态一致；未知异常记录日志，只返回"服务器内部错误，请稍后重试"。
 
-- [ ] **A5 (P1) 消除重复代码**
+- [x] **A5 (P1) 消除重复代码**
   - `PaoService.processReview` 与 `ObjectService.processReview` 几乎相同（错题累加），`ReviewItem` DTO 也重复——抽出 `WrongItemService.recordFailure(module, item)`。
   - `updateAchievementProgress` 与 `incrementAchievement` 大部分逻辑相同。
+  - ✅ 已完成：`WrongItemService.recordReview` 统一错题记录，`ReviewItem` 等 DTO 移到 `dto` 包；成就逻辑已在第 3 步合并。
 
-- [ ] **A6 (P2) 统计在数据库端聚合**
+- [x] **A6 (P2) 统计在数据库端聚合**
   - `getBests` 为每个模块加载全部记录到内存再求 max/min/sum；`getWeakest` 加载全部错题后 `subList`；`/records/list?module=` 返回该模块全部记录。
   - 建议改为 JPQL 聚合查询 + `Pageable`/`Limit`。`/summary` 中热力图可复用 `/trend` 的分组结果，避免同一请求查两次。
+  - ✅ 已完成：`AnalyticsService` 承接统计逻辑，个人最佳用 `GROUP BY` 聚合，错题与记录列表分页（`/records/list` 新增 `limit`，默认 20）；热力图只查询时间列。重构前后在真实数据上对比，9 个接口返回完全一致。
 
 - [ ] **A7 (P2) 小改进**
   - 实体样板代码较多，可考虑 Java `record`（DTO）或 Lombok（实体）。
   - `ObjectService.batchUpdateWeights` 逐条 `findByNumberString`，可一次 `findAllByNumberStringIn`。
   - `ORDER BY RAND()` 在当前数据量下没问题，保留即可。
   - 时间统一使用 `Clock` 注入，便于测试"跨天"相关逻辑（连续训练、每日挑战）。
+  - 🔶 部分完成：DTO 已改用 Java `record`；权重/导入改为一次 `findAllByNumberStringIn` 批量查询。`Clock` 注入与实体样板代码暂未处理。
 
 ---
 

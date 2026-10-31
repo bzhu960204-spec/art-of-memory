@@ -3,6 +3,7 @@ package com.memory.service;
 import com.memory.dto.TrainRecordRequest;
 import com.memory.entity.TrainRecord;
 import com.memory.repository.TrainRecordRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,11 +46,11 @@ public class TrainRecordService {
         return saved;
     }
 
-    public List<TrainRecord> getByModule(String moduleType) {
-        return trainRecordRepository.findByModuleTypeOrderByCreatedTimeDesc(moduleType);
-    }
-
-    public List<TrainRecord> getRecent() {
-        return trainRecordRepository.findTop20ByOrderByCreatedTimeDesc();
+    @Transactional(readOnly = true)
+    public List<TrainRecord> getRecent(String moduleType, int limit) {
+        PageRequest page = PageRequest.of(0, limit);
+        return moduleType != null && !moduleType.isEmpty()
+                ? trainRecordRepository.findByModuleTypeOrderByCreatedTimeDesc(moduleType, page)
+                : trainRecordRepository.findAllByOrderByCreatedTimeDesc(page);
     }
 }

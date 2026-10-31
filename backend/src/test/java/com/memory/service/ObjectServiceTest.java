@@ -1,5 +1,10 @@
 package com.memory.service;
 
+import com.memory.common.BusinessException;
+import com.memory.dto.ObjectImportItem;
+import com.memory.dto.ObjectUpdateRequest;
+import com.memory.dto.ReviewItem;
+import com.memory.dto.WeightUpdate;
 import com.memory.entity.ObjectCode;
 import com.memory.entity.WrongItem;
 import com.memory.repository.ObjectCodeRepository;
@@ -13,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -87,25 +93,39 @@ class ObjectServiceTest {
         return objectCodeRepository.findByNumberString(number).orElseThrow();
     }
 
-    private static ObjectService.WeightUpdate weight(String number, int delta) {
-        ObjectService.WeightUpdate u = new ObjectService.WeightUpdate();
-        u.setNumberString(number);
-        u.setDelta(delta);
-        return u;
+    @Test
+    void updateTrimsValuesAndKeepsOmittedFields() {
+        String originalHint = code("10").getHint();
+
+        service.update("10", new ObjectUpdateRequest("  棒球 ", null));
+
+        assertThat(code("10").getObjectName()).isEqualTo("棒球");
+        assertThat(code("10").getHint()).isEqualTo(originalHint);
     }
 
-    private static ObjectService.ImportItem importItem(String number, String name, String hint) {
-        ObjectService.ImportItem i = new ObjectService.ImportItem();
-        i.setNumberString(number);
-        i.setObjectName(name);
-        i.setHint(hint);
-        return i;
+    @Test
+    void updatingUnknownCodeIsNotFound() {
+        assertThatThrownBy(() -> service.update("XX", new ObjectUpdateRequest("x", null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("XX");
     }
 
-    private static ObjectService.ReviewItem review(String number, int rating) {
-        ObjectService.ReviewItem r = new ObjectService.ReviewItem();
-        r.setNumberString(number);
-        r.setRating(rating);
-        return r;
+    @Test
+    void repeatedWeightUpdatesForSameCodeAccumulate() {
+        service.batchUpdateWeights(List.of(weight("11", 2), weight("11", 3)));
+
+        assertThat(code("11").getWeight()).isEqualTo(6);
+    }
+
+    private static WeightUpdate weight(String number, int delta) {
+        return new WeightUpdate(number, delta);
+    }
+
+    private static ObjectImportItem importItem(String number, String name, String hint) {
+        return new ObjectImportItem(number, name, hint);
+    }
+
+    private static ReviewItem review(String number, int rating) {
+        return new ReviewItem(number, rating, 1000);
     }
 }
