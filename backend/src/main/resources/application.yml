@@ -25,7 +25,6 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
-    database-platform: org.hibernate.dialect.H2Dialect
     # Run data.sql after Hibernate has created/updated the tables
     defer-datasource-initialization: true
   sql:
