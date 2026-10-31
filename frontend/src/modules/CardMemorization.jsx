@@ -44,7 +44,9 @@ export default function CardMemorization() {
       setUserSequence([])
       setResults(null)
       setState(STATES.MEMORIZE)
-      setStartTime(performance.now())
+      const now = performance.now()
+      setStartTime(now)
+      setElapsed(now)
       timerRef.current = requestAnimationFrame(function tick() {
         setElapsed(performance.now())
         timerRef.current = requestAnimationFrame(tick)

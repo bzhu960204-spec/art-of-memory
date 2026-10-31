@@ -40,8 +40,9 @@ export default function PaoTrainer() {
   const startCard = useCallback(() => {
     setState(STATES.SHOWING_NUMBER)
     setFlipped(false)
-    setStartTime(performance.now())
-    setElapsed(0)
+    const now = performance.now()
+    setStartTime(now)
+    setElapsed(now)
     timerRef.current = requestAnimationFrame(function tick() {
       setElapsed(performance.now())
       timerRef.current = requestAnimationFrame(tick)
@@ -57,13 +58,15 @@ export default function PaoTrainer() {
   const flipCard = useCallback(() => {
     if (state !== STATES.SHOWING_NUMBER) return
     cancelAnimationFrame(timerRef.current)
+    // Freeze the response time at the moment of flipping (animation frames may be throttled)
+    setElapsed(performance.now())
     setFlipped(true)
     setState(STATES.SHOWING_ANSWER)
   }, [state])
 
   const rateCard = useCallback((rating) => {
     if (state !== STATES.SHOWING_ANSWER) return
-    const responseMs = Math.round(elapsed - startTime)
+    const responseMs = Math.max(0, Math.round(elapsed - startTime))
     const newResults = [...results, {
       numberString: cards[currentIndex].numberString,
       rating,
@@ -99,8 +102,9 @@ export default function PaoTrainer() {
       setCurrentIndex(currentIndex + 1)
       setFlipped(false)
       setState(STATES.SHOWING_NUMBER)
-      setStartTime(performance.now())
-      setElapsed(0)
+      const now = performance.now()
+      setStartTime(now)
+      setElapsed(now)
       timerRef.current = requestAnimationFrame(function tick() {
         setElapsed(performance.now())
         timerRef.current = requestAnimationFrame(tick)
