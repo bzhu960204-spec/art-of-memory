@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 import { shuffle } from '../utils/random'
 import { useCountdown } from '../hooks/useCountdown'
@@ -51,9 +52,9 @@ function generateBinaryNumbers(count, digits) {
 }
 
 export default function BinaryDatesTrainer() {
-  const [mode, setMode] = useState(MODES.BINARY)
+  const [mode, setMode] = usePersistentState('binary.mode', MODES.BINARY)
   const [state, setState] = useState(STATES.CONFIG)
-  const [config, setConfig] = useState({ count: 10, digits: 8, memorizeTime: 60 })
+  const [config, setConfig] = usePersistentState('binary.config', { count: 10, digits: 8, memorizeTime: 60 })
   const [items, setItems] = useState([])
   const [shuffledItems, setShuffledItems] = useState([])
   const [userAnswers, setUserAnswers] = useState([])

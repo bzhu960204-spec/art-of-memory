@@ -9,4 +9,6 @@ import java.util.List;
 public interface PaoCodeRepository extends JpaRepository<PaoCode, Long> {
     @Query(value = "SELECT * FROM pao_codes ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<PaoCode> findRandom(@Param("limit") int limit);
+
+    List<PaoCode> findByNumberStringIn(java.util.Collection<String> numberStrings);
 }

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 import { useCountdown } from '../hooks/useCountdown'
 
@@ -20,7 +21,7 @@ function generateMatrix() {
 
 export default function SpeedNumbers() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [timeLimit, setTimeLimit] = useState(60)
+  const [timeLimit, setTimeLimit] = usePersistentState('numbers.timeLimit', 60)
   const [matrix, setMatrix] = useState([])
   const [userMatrix, setUserMatrix] = useState([])
   const [results, setResults] = useState(null)

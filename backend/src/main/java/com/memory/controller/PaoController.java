@@ -28,6 +28,12 @@ public class PaoController {
         return Result.success(paoService.getRandomCards(limit));
     }
 
+    /** Training session: cards due for spaced-repetition review first, then random cards. */
+    @GetMapping("/session")
+    public Result<List<PaoCode>> getSessionCards(@RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
+        return Result.success(paoService.getSessionCards(limit));
+    }
+
     @PostMapping("/review")
     public Result<String> submitReview(@RequestBody List<@Valid ReviewItem> reviewItems) {
         paoService.processReview(reviewItems);

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../api'
 
 const STATES = { LOADING: 'LOADING', READY: 'READY', SHOWING_NUMBER: 'SHOWING_NUMBER', SHOWING_ANSWER: 'SHOWING_ANSWER', COMPLETE: 'COMPLETE' }
+const SESSION_SIZE = 20
 
 export default function PaoTrainer() {
   const [cards, setCards] = useState([])
@@ -13,12 +14,17 @@ export default function PaoTrainer() {
   const [sessionStats, setSessionStats] = useState(null)
   const timerRef = useRef(null)
   const [elapsed, setElapsed] = useState(0)
+  const [dueCount, setDueCount] = useState(0)
 
   const loadCards = useCallback(async () => {
     setState(STATES.LOADING)
     try {
-      const data = await api.getPaoRandom(20)
+      const [data, stats] = await Promise.all([
+        api.getPaoSession(SESSION_SIZE),
+        api.getSrsStats('PAO').catch(() => ({ due: 0 })),
+      ])
       setCards(data)
+      setDueCount(Math.min(stats.due, data.length))
       setCurrentIndex(0)
       setResults([])
       setFlipped(false)
@@ -165,7 +171,7 @@ export default function PaoTrainer() {
       {/* Progress */}
       <div className="w-full max-w-md mb-8">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
-          <span>进度: {currentIndex + 1} / {cards.length}</span>
+          <span>进度: {currentIndex + 1} / {cards.length}{dueCount > 0 && <span className="ml-2 text-orange-400">· 含 {dueCount} 张到期复习</span>}</span>
           <span className="font-mono text-cyan-400">{currentMs}ms</span>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-2">

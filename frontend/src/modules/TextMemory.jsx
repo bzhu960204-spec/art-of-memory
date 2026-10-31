@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 import { useCountdown } from '../hooks/useCountdown'
 
@@ -33,7 +34,7 @@ const SAMPLE_TEXTS = [
 
 export default function TextMemory() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [config, setConfig] = useState({ textIndex: 0, memorizeTime: 120, customText: '', useCustom: false })
+  const [config, setConfig] = usePersistentState('text.config', { textIndex: 0, memorizeTime: 120, customText: '', useCustom: false })
   const [text, setText] = useState('')
   const [title, setTitle] = useState('')
   const [blankedText, setBlankedText] = useState([])

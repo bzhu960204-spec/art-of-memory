@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULT: 'RESULT' }
@@ -42,7 +43,7 @@ function formatNumber(num) {
 
 export default function NumberMemory() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [digits, setDigits] = useState(10)
+  const [digits, setDigits] = usePersistentState('numMemory.digits', 10)
   const [customDigits, setCustomDigits] = useState('')
   const [number, setNumber] = useState('')
   const [userInput, setUserInput] = useState('')

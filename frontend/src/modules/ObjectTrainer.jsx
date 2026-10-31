@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../api'
-import { weightedSample } from '../utils/random'
+import { buildSession } from '../utils/random'
 
 // ─── 状态机 ───────────────────────────────────────────────
 const S = {
@@ -24,6 +24,7 @@ function takeAll(pendingRef) {
 // ─── 组件 ─────────────────────────────────────────────────
 export default function ObjectTrainer() {
   const [allCodes, setAllCodes] = useState([])
+  const [dueCount, setDueCount] = useState(0)
   const [queue, setQueue] = useState([])       // 当前训练队列（含重插卡）
   const [queueIdx, setQueueIdx] = useState(0)
   const [state, setState] = useState(S.LOADING)
@@ -42,9 +43,14 @@ export default function ObjectTrainer() {
   const loadCodes = useCallback(async () => {
     setState(S.LOADING)
     try {
-      const data = await api.getObjectAll()
+      const [data, dueKeys] = await Promise.all([
+        api.getObjectAll(),
+        api.getSrsDue('OBJECT', SESSION_SIZE).catch(() => []),
+      ])
       setAllCodes(data)
-      const q = weightedSample(data, Math.min(SESSION_SIZE, data.length))
+      const session = buildSession(data, dueKeys, Math.min(SESSION_SIZE, data.length))
+      const q = session.cards
+      setDueCount(session.dueCount)
       setQueue(q)
       setQueueIdx(0)
       setResults([])
@@ -306,7 +312,7 @@ export default function ObjectTrainer() {
         {/* 进度条 */}
         <div className="w-full max-w-md mb-8">
           <div className="flex justify-between text-sm text-gray-400 mb-2">
-            <span>进度: {queueIdx + 1} / {totalInQueue}</span>
+            <span>进度: {queueIdx + 1} / {totalInQueue}{dueCount > 0 && <span className="ml-2 text-orange-400">· 含 {dueCount} 张到期复习</span>}</span>
             <span className={`font-mono font-bold ${timerColor}`}>
               {(currentMs / 1000).toFixed(1)}s
               {isProficientZone && <span className="text-xs ml-1 opacity-60">← 熟练区</span>}
@@ -366,7 +372,7 @@ export default function ObjectTrainer() {
       {/* 进度条 */}
       <div className="w-full max-w-md mb-8">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
-          <span>进度: {queueIdx + 1} / {totalInQueue}</span>
+          <span>进度: {queueIdx + 1} / {totalInQueue}{dueCount > 0 && <span className="ml-2 text-orange-400">· 含 {dueCount} 张到期复习</span>}</span>
           <span className={`font-mono font-bold ${wasSlower ? 'text-red-400' : 'text-green-400'}`}>
             {(responseMs / 1000).toFixed(1)}s
           </span>

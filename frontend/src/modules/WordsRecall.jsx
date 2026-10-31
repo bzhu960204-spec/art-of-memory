@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 
 const STATES = { CONFIG: 'CONFIG', FLASHING: 'FLASHING', RECALL: 'RECALL', RESULTS: 'RESULTS' }
 
 export default function WordsRecall() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [config, setConfig] = useState({ count: 20, interval: 2 })
+  const [config, setConfig] = usePersistentState('words.config', { count: 20, interval: 2 })
   const [words, setWords] = useState([])
   const [currentFlashIndex, setCurrentFlashIndex] = useState(0)
   const [userAnswers, setUserAnswers] = useState([])

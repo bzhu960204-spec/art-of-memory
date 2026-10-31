@@ -41,3 +41,16 @@ export function weightedSample(items, count, random = Math.random) {
   }
   return result
 }
+
+/**
+ * Builds a training session: cards due for spaced-repetition review come first (in the given order),
+ * the rest is filled by weighted sampling.
+ * @returns {{ cards: object[], dueCount: number }}
+ */
+export function buildSession(items, dueKeys, size, random = Math.random) {
+  const byKey = new Map(items.map(i => [i.numberString, i]))
+  const due = dueKeys.map(k => byKey.get(k)).filter(Boolean).slice(0, size)
+  const dueSet = new Set(due.map(d => d.numberString))
+  const rest = weightedSample(items.filter(i => !dueSet.has(i.numberString)), size - due.length, random)
+  return { cards: [...due, ...rest], dueCount: due.length }
+}

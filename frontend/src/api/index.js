@@ -43,6 +43,12 @@ async function request(url, options = {}, context) {
 
 export const api = {
   getPaoRandom: (limit = 20) => request(`/pao/random?limit=${limit}`),
+  getPaoSession: (limit = 20) => request(`/pao/session?limit=${limit}`),
+  // Spaced repetition
+  getSrsDue: (module, limit = 20) => request(`/srs/due?module=${module}&limit=${limit}`),
+  getSrsStats: (module) => request(`/srs/stats?module=${module}`),
+  // Full data export (download link, not a JSON request)
+  backupExportUrl: `${API_BASE}/backup/export`,
   postPaoReview: (items) => request('/pao/review', { method: 'POST', body: JSON.stringify(items) }),
   getWordsRandom: (limit = 20) => request(`/words/random?limit=${limit}`),
   getCardsShuffle: () => request('/cards/shuffle'),

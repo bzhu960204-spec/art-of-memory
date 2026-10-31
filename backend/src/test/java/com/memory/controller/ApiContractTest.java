@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -154,6 +155,40 @@ class ApiContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.msg").value("请求格式不正确"))
                 .andExpect(jsonPath("$.msg", not(containsString("Exception"))));
+    }
+
+    // ---- srs & backup ----
+
+    @Test
+    void srsEndpointsValidateModule() throws Exception {
+        mvc.perform(get("/api/srs/stats?module=PAO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.due").isNumber())
+                .andExpect(jsonPath("$.data.learned").isNumber());
+        mvc.perform(get("/api/srs/due?module=NOPE")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void paoSessionEndpointReturnsRequestedNumberOfCards() throws Exception {
+        mvc.perform(get("/api/pao/session?limit=15"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(15));
+    }
+
+    @Test
+    void backupExportIsADownloadableJsonFileWithAllSections() throws Exception {
+        mvc.perform(get("/api/backup/export"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("attachment; filename=\"art-of-memory-backup-")))
+                .andExpect(jsonPath("$.formatVersion").value(1))
+                .andExpect(jsonPath("$.trainRecords.length()").value(4))
+                .andExpect(jsonPath("$.objectCodes.length()").value(100))
+                .andExpect(jsonPath("$.paoCodes.length()").value(100))
+                .andExpect(jsonPath("$.wrongItems").isArray())
+                .andExpect(jsonPath("$.srsCards").isArray())
+                .andExpect(jsonPath("$.achievements").isArray())
+                .andExpect(jsonPath("$.dailyChallenges").isArray())
+                .andExpect(jsonPath("$.palaceImages").isArray());
     }
 
     private void record(String module, double accuracy, Integer avgMs, int items) {

@@ -94,8 +94,16 @@ export default function ChallengeAchievements() {
                     </div>
                   )}
                 </div>
-                <div className="text-6xl">
-                  {moduleTypeInfo(daily.moduleType).icon}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="text-6xl">
+                    {moduleTypeInfo(daily.moduleType).icon}
+                  </div>
+                  {moduleTypeInfo(daily.moduleType).route && (
+                    <a href={`#/${moduleTypeInfo(daily.moduleType).route}`}
+                      className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white font-medium transition-colors">
+                      开始挑战 →
+                    </a>
+                  )}
                 </div>
               </div>
             ) : (

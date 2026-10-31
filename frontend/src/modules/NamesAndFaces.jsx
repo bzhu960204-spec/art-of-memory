@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { api } from '../api'
 import { shuffle } from '../utils/random'
 import { useCountdown } from '../hooks/useCountdown'
@@ -53,7 +54,7 @@ function FaceAvatar({ person, size = 80 }) {
 
 export default function NamesAndFaces() {
   const [state, setState] = useState(STATES.CONFIG)
-  const [config, setConfig] = useState({ count: 10, memorizeTime: 60 })
+  const [config, setConfig] = usePersistentState('names.config', { count: 10, memorizeTime: 60 })
   const [people, setPeople] = useState([])
   const [shuffledPeople, setShuffledPeople] = useState([])
   const [userAnswers, setUserAnswers] = useState([])

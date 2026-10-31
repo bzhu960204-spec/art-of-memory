@@ -11,6 +11,7 @@ import com.memory.repository.ObjectCodeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -24,10 +25,13 @@ public class ObjectService {
 
     private final ObjectCodeRepository objectCodeRepository;
     private final WrongItemService wrongItemService;
+    private final SrsService srsService;
 
-    public ObjectService(ObjectCodeRepository objectCodeRepository, WrongItemService wrongItemService) {
+    public ObjectService(ObjectCodeRepository objectCodeRepository, WrongItemService wrongItemService,
+                         SrsService srsService) {
         this.objectCodeRepository = objectCodeRepository;
         this.wrongItemService = wrongItemService;
+        this.srsService = srsService;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +89,7 @@ public class ObjectService {
     @Transactional
     public void processReview(List<ReviewItem> items) {
         wrongItemService.recordReview(ModuleType.OBJECT, items);
+        srsService.recordReview(ModuleType.OBJECT, items, LocalDate.now());
     }
 
     private Map<String, ObjectCode> byNumber(List<String> numbers) {

@@ -62,6 +62,11 @@ export default function AnalyticsDashboard() {
               {d}天
             </button>
           ))}
+          <a href={api.backupExportUrl} download
+            title="下载全部训练数据（JSON），可用于备份"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors">
+            ⬇ 导出数据
+          </a>
         </div>
       </div>
 
