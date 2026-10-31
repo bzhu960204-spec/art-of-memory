@@ -167,6 +167,7 @@
 
 - [ ] **F5 (P2) 计时器渲染性能**
   - PAO / Object / Cards 训练时用 `requestAnimationFrame` 每帧 `setElapsed`，导致整个大组件每秒重渲染约 60 次。
+  - 🔶 相关 Bug 已修复：PaoTrainer 计时初值不一致导致显示负数毫秒（后台标签页可能一直为负，并会被后端校验拒绝）。逐帧重渲染本身尚未优化。
   - 建议：开始时间存 `ref`，显示部分拆成独立的小组件，或以 50~100ms 间隔刷新。
 
 - [ ] **F6 (P2) 响应式与可访问性**
@@ -190,15 +191,19 @@
 
 - [x] **E3 (P1) Maven Wrapper**：添加 `mvnw`，避免依赖全局 Maven；启动脚本改用 wrapper。
 
-- [ ] **E4 (P2) CI**：GitHub Actions 运行 `mvnw verify` + `npm ci && npm run lint && npm test && npm run build`。
+- [x] **E4 (P2) CI**：GitHub Actions 运行 `mvnw verify` + `npm ci && npm run lint && npm test && npm run build`。
+  - ✅ 已完成：`.github/workflows/ci.yml`（后端 JDK 17，前端 Node 22）。
 
-- [ ] **E5 (P2) 依赖升级**
+- [x] **E5 (P2) 依赖升级**
   - Spring Boot 3.2.5 → 3.5.x（3.2 已停止开源支持）。
   - Vite 5 → 6/7，React 18 → 19（可选），Tailwind 3 → 4（可选，改动较大，可放最后）。
+  - ✅ 已完成：评审时 3.x 也已停止开源支持，直接升级到 **Spring Boot 4.1.2**（Hibernate 7 / Jackson 3）；前端升级到 **React 19、Vite 8、Vitest 5**。重构前后 13 个接口在真实数据上的 JSON 语义完全一致（Jackson 3 仅改变了属性顺序）。React 19 使首屏 JS 增加约 23 KB（gzip），本地应用可忽略。Tailwind 4、ESLint 10 暂不升级（迁移成本高、收益小）。
 
-- [ ] **E6 (P2) 单进程发布形态（可选）**：`npm run build` 后把 `dist` 拷入 Spring Boot `static/`，打成单个 jar，双击即可使用，无需 Node 环境。
+- [x] **E6 (P2) 单进程发布形态（可选）**：`npm run build` 后把 `dist` 拷入 Spring Boot `static/`，打成单个 jar，双击即可使用，无需 Node 环境。
+  - ✅ 已完成：`build-release.ps1` + Maven `release` profile，`java -jar` 即可访问 `http://localhost:8080`。
 
 - [ ] **E7 (P2) 启动脚本**：`start-dev.ps1` 等待后端就绪最长 120 秒，可改为探测健康检查接口（如 Actuator `/actuator/health`）；`stop-dev.ps1` 按端口强杀进程，可能误杀占用同端口的其他程序。
+  - ⏸️ 暂未处理：现有脚本可用，收益较小。
 
 ---
 
@@ -220,8 +225,10 @@
 
 ## 8. 文档
 
-- [ ] **D1 (P1) README 补充**：环境要求（JDK 17、Maven、Node 版本）、项目结构、模块介绍、数据存放位置、备份方式、常见问题（端口占用、数据库位置）。
-- [ ] **D2 (P2) API 文档**：可引入 springdoc-openapi 自动生成 Swagger UI。
+- [x] **D1 (P1) README 补充**：环境要求（JDK 17、Maven、Node 版本）、项目结构、模块介绍、数据存放位置、备份方式、常见问题（端口占用、数据库位置）。
+  - ✅ 已完成：模块介绍、环境要求、开发/单 jar 两种启动方式、项目结构、数据目录与导出、测试与 CI。
+- [x] **D2 (P2) API 文档**：可引入 springdoc-openapi 自动生成 Swagger UI。
+  - ✅ 已完成：springdoc 3.2.0，`/swagger-ui/index.html`（28 个接口）。
 
 ---
 
@@ -229,13 +236,13 @@
 
 每个阶段尽量独立可验证，完成一步提交一次。
 
-| 阶段 | 内容 | 涉及条目 | 风险 |
-| --- | --- | --- | --- |
-| **第 1 步：打基础** | 数据库/图片移出 Git、修复种子数据初始化、固定数据目录、Maven Wrapper | R1, R2, R3, E3 | 低（需先备份现有数据） |
-| **第 2 步：安全网** | 后端测试框架 + 前端 ESLint/Vitest，给关键逻辑补测试 | E1, E2 | 低 |
-| **第 3 步：修复核心 Bug** | 训练记录 DTO、统一"记录→连续天数→挑战→成就"流程、模块枚举 | B1, B2, B3, B9, A2, A3 | 中 |
-| **第 4 步：后端重构** | Service 分层、统一错误处理、去重、聚合查询 | A1, A4, A5, A6 | 中 |
-| **第 5 步：前端重构** | 共享常量、通用 hooks、错误提示、路由 + 懒加载 | F1, F2, F3, F4, B4~B8 | 中 |
-| **第 6 步：安全加固** | H2 Console、监听地址、CORS、上传校验 | S1~S4 | 低 |
-| **第 7 步：体验增强** | SRS、可玩的每日挑战、数据导出等 | T1~T6 | 按需 |
-| **第 8 步：收尾** | 依赖升级、CI、文档、单 jar 发布 | E4~E7, D1, D2 | 低~中 |
+| 阶段 | 内容 | 涉及条目 | 风险 | 状态 |
+| --- | --- | --- | --- | --- |
+| **第 1 步：打基础** | 数据库/图片移出 Git、修复种子数据初始化、固定数据目录、Maven Wrapper | R1, R2, R3, E3 | 低（需先备份现有数据） | ✅ 已完成 |
+| **第 2 步：安全网** | 后端测试框架 + 前端 ESLint/Vitest，给关键逻辑补测试 | E1, E2 | 低 | ✅ 已完成 |
+| **第 3 步：修复核心 Bug** | 训练记录 DTO、统一"记录→连续天数→挑战→成就"流程、模块枚举 | B1, B2, B3, B9, A2, A3 | 中 | ✅ 已完成 |
+| **第 4 步：后端重构** | Service 分层、统一错误处理、去重、聚合查询 | A1, A4, A5, A6 | 中 | ✅ 已完成 |
+| **第 5 步：前端重构** | 共享常量、通用 hooks、错误提示、路由 + 懒加载 | F1, F2, F3, F4, B4~B8 | 中 | ✅ 已完成 |
+| **第 6 步：安全加固** | H2 Console、监听地址、CORS、上传校验 | S1~S4 | 低 | ⏭️ 跳过（不关心安全） |
+| **第 7 步：体验增强** | SRS、可玩的每日挑战、数据导出等 | T1~T6 | 按需 | ✅ T1/T2/T4/T5（T3、T6 未做） |
+| **第 8 步：收尾** | 依赖升级、CI、文档、单 jar 发布 | E4~E7, D1, D2 | 低~中 | ✅ 除 E7 外完成 |
