@@ -24,16 +24,17 @@
 
 ## 1. 功能缺陷（Bug）
 
-- [ ] **B1 (P0) 成就系统永远不会解锁**
+- [x] **B1 (P0) 成就系统永远不会解锁**
   - 成就进度只在 [`ChallengeController.submitDaily`](../backend/src/main/java/com/memory/controller/ChallengeController.java) 中更新，但前端从未调用 `api.submitDailyChallenge`（仅在 [`api/index.js`](../frontend/src/api/index.js) 中定义）。
   - 训练保存走的是 [`TrainRecordService.save`](../backend/src/main/java/com/memory/service/TrainRecordService.java)，它只更新连续训练和每日挑战，不检查成就。
   - 建议：把"保存训练记录 → 更新连续天数 → 更新每日挑战 → 检查成就"统一放到一个领域服务中，删除 `submitDaily` 或让它复用同一服务。
+  - ✅ 已完成：`TrainRecordService.save` 统一调用 `StreakService` / `DailyChallengeService` / `AchievementService`；成就进度由数据推导（训练总数、满分次数、最长连续天数），启动时自动回填历史；`/challenge/daily/submit` 已删除。
 
-- [ ] **B2 (P0) 连续训练（Streak）逻辑重复且 GET 有副作用**
+- [x] **B2 (P0) 连续训练（Streak）逻辑重复且 GET 有副作用**
   - `updateStreak()` 在 `TrainRecordService` 和 `ChallengeController` 各有一份。
   - `GET /api/challenge/streak` 会把 `currentStreak` 改成 0 并写库——GET 不应修改数据，应在读取时"计算"展示值。
 
-- [ ] **B3 (P0) 训练记录接口可覆盖已有数据**
+- [x] **B3 (P0) 训练记录接口可覆盖已有数据**
   - `POST /api/records/save` 直接以 `TrainRecord` 实体作为 `@RequestBody`，请求中若带 `id`，JPA 会执行 merge 覆盖已有记录。
   - 建议：引入请求 DTO（不含 `id`/`createdTime`），并校验 `moduleType` 必须是已知枚举、数值字段非负。
 
@@ -57,8 +58,9 @@
   - 后端未启动时代理返回 HTML/空响应，`response.json()` 抛出 `Unexpected token` 之类的原始错误。
   - `uploadPalaceImage` 绕过了统一的 `request()`。
 
-- [ ] **B9 (P2) 每日挑战并发创建**
+- [x] **B9 (P2) 每日挑战并发创建**
   - `GET /daily` 与保存训练记录都可能"查不到就创建"今日挑战，存在并发重复插入的可能；创建逻辑也重复了两份（模块轮换数组写了两遍）。
+  - ✅ 创建逻辑已合并到 `DailyChallengeService.getOrCreate`。并发唯一约束暂未加（单用户本地应用，风险极低）。
 
 ---
 
@@ -91,17 +93,20 @@
   - `ChallengeController`（成就定义、连续训练、挑战）、`AnalyticsController`、`PalaceController`（文件存储）都在 Controller 里写业务逻辑。
   - 建议拆出 `ChallengeService`、`AchievementService`、`AnalyticsService`、`PalaceStorageService`。
 
-- [ ] **A2 (P1) 模块类型使用枚举统一管理**
+- [x] **A2 (P1) 模块类型使用枚举统一管理**
   - `"PAO"`, `"OBJECT"`, `"NUMBERS"` 等字符串散落在前后端多处；每日挑战轮换数组重复两次。
   - 建议后端定义 `ModuleType` 枚举（含是否参与每日挑战等元数据），可提供 `GET /api/meta/modules` 供前端使用。
+  - ✅ 后端已完成（`common/ModuleType`，`/analytics/bests` 已覆盖全部 9 个模块）；前端常量统一见 F1。
 
 - [ ] **A3 (P1) 请求 DTO + Bean Validation**
   - 引入 `spring-boot-starter-validation`，对 `limit`、`days`、`numberString`（`^\d{2}$`）、`rating`（1~3）、`accuracy`（0~1）等加约束；`/pao/random?limit=` 与 `/words/random?limit=` 目前无上限。
   - `submitDaily` 使用 `Map<String,Object>` 接收并强转 `Number`，类型错误会变成 500。
+  - 🔶 部分完成：`/records/save` 已使用 `TrainRecordRequest` + `@Valid`，非法参数返回 400；其余接口待第 4 步处理。
 
 - [ ] **A4 (P1) 统一的错误处理与 HTTP 状态码**
   - [`Result.error`](../backend/src/main/java/com/memory/common/Result.java) 固定 `code=500`；Controller 中直接 `return Result.error(...)` 时 HTTP 状态是 200，而异常处理器返回 400/500，表现不一致。
   - `handleGeneral` 把 `e.getMessage()` 原样返回给前端，可能泄露内部信息。建议：业务异常类 + 错误码，未知异常只返回通用提示并记录日志。
+  - 🔶 测试中新发现并已修复：兜底的 `Exception` 处理器会把不存在的接口（404）、方法不支持（405）也变成 500，现已保留原始状态码。
 
 - [ ] **A5 (P1) 消除重复代码**
   - `PaoService.processReview` 与 `ObjectService.processReview` 几乎相同（错题累加），`ReviewItem` DTO 也重复——抽出 `WrongItemService.recordFailure(module, item)`。

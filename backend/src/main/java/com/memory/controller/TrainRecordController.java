@@ -1,8 +1,10 @@
 package com.memory.controller;
 
 import com.memory.common.Result;
+import com.memory.dto.TrainRecordRequest;
 import com.memory.entity.TrainRecord;
 import com.memory.service.TrainRecordService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,8 +20,8 @@ public class TrainRecordController {
     }
 
     @PostMapping("/save")
-    public Result<TrainRecord> save(@RequestBody TrainRecord record) {
-        return Result.success(trainRecordService.save(record));
+    public Result<TrainRecord> save(@Valid @RequestBody TrainRecordRequest request) {
+        return Result.success(trainRecordService.save(request));
     }
 
     @GetMapping("/list")

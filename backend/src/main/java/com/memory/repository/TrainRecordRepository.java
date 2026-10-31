@@ -23,4 +23,6 @@ public interface TrainRecordRepository extends JpaRepository<TrainRecord, Long> 
     List<Object[]> getModuleStats(@Param("since") LocalDateTime since);
 
     long countByModuleType(String moduleType);
+
+    long countByAccuracyRateGreaterThanEqual(Double accuracyRate);
 }

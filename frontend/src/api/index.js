@@ -56,7 +56,6 @@ export const api = {
   getAnalyticsBests: () => request('/analytics/bests'),
   // Challenge & Achievements
   getDailyChallenge: () => request('/challenge/daily'),
-  submitDailyChallenge: (data) => request('/challenge/daily/submit', { method: 'POST', body: JSON.stringify(data) }),
   getChallengeHistory: () => request('/challenge/daily/history'),
   getStreak: () => request('/challenge/streak'),
   getAchievements: () => request('/challenge/achievements'),

@@ -1,5 +1,6 @@
 package com.memory.controller;
 
+import com.memory.common.ModuleType;
 import com.memory.common.Result;
 import com.memory.entity.TrainRecord;
 import com.memory.entity.WrongItem;
@@ -128,9 +129,9 @@ public class AnalyticsController {
     @GetMapping("/bests")
     public Result<Map<String, Map<String, Object>>> getBests() {
         Map<String, Map<String, Object>> bests = new HashMap<>();
-        String[] modules = {"PAO", "OBJECT", "WORDS", "CARDS", "NUMBERS"};
 
-        for (String mod : modules) {
+        for (ModuleType moduleType : ModuleType.values()) {
+            String mod = moduleType.name();
             List<TrainRecord> records = trainRecordRepository.findByModuleTypeOrderByCreatedTimeDesc(mod);
             if (!records.isEmpty()) {
                 Map<String, Object> best = new HashMap<>();

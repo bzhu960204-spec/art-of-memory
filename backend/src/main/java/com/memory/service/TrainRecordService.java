@@ -1,10 +1,7 @@
 package com.memory.service;
 
-import com.memory.entity.DailyChallenge;
-import com.memory.entity.StreakRecord;
+import com.memory.dto.TrainRecordRequest;
 import com.memory.entity.TrainRecord;
-import com.memory.repository.DailyChallengeRepository;
-import com.memory.repository.StreakRecordRepository;
 import com.memory.repository.TrainRecordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,55 +13,36 @@ import java.util.List;
 public class TrainRecordService {
 
     private final TrainRecordRepository trainRecordRepository;
-    private final StreakRecordRepository streakRecordRepository;
-    private final DailyChallengeRepository dailyChallengeRepository;
+    private final StreakService streakService;
+    private final DailyChallengeService dailyChallengeService;
+    private final AchievementService achievementService;
 
     public TrainRecordService(TrainRecordRepository trainRecordRepository,
-                              StreakRecordRepository streakRecordRepository,
-                              DailyChallengeRepository dailyChallengeRepository) {
+                              StreakService streakService,
+                              DailyChallengeService dailyChallengeService,
+                              AchievementService achievementService) {
         this.trainRecordRepository = trainRecordRepository;
-        this.streakRecordRepository = streakRecordRepository;
-        this.dailyChallengeRepository = dailyChallengeRepository;
+        this.streakService = streakService;
+        this.dailyChallengeService = dailyChallengeService;
+        this.achievementService = achievementService;
     }
 
+    /** Saves a finished session and updates streak, daily challenge and achievements. */
     @Transactional
-    public TrainRecord save(TrainRecord record) {
-        // Validate accuracy rate
-        if (record.getAccuracyRate() != null) {
-            record.setAccuracyRate(Math.max(0, Math.min(1, record.getAccuracyRate())));
-        }
+    public TrainRecord save(TrainRecordRequest request) {
+        TrainRecord record = new TrainRecord();
+        record.setModuleType(request.moduleType().name());
+        record.setDurationSeconds(request.durationSeconds());
+        record.setAccuracyRate(Math.max(0, Math.min(1, request.accuracyRate())));
+        record.setAvgResponseMs(request.avgResponseMs());
+        record.setTotalItems(request.totalItems());
         TrainRecord saved = trainRecordRepository.save(record);
-        updateStreak();
-        updateDailyChallenge(record);
-        return saved;
-    }
 
-    private void updateDailyChallenge(TrainRecord record) {
         LocalDate today = LocalDate.now();
-        DailyChallenge challenge = dailyChallengeRepository.findByChallengeDate(today)
-                .orElseGet(() -> {
-                    DailyChallenge dc = new DailyChallenge();
-                    dc.setChallengeDate(today);
-                    String[] modules = {"NUMBERS", "WORDS", "CARDS", "PAO", "OBJECT"};
-                    dc.setModuleType(modules[today.getDayOfYear() % modules.length]);
-                    dc.setSeed(today.toEpochDay());
-                    dc.setAttempts(0);
-                    return dailyChallengeRepository.save(dc);
-                });
-
-        // Update daily challenge if module type matches
-        if (challenge.getModuleType().equals(record.getModuleType())) {
-            challenge.setAttempts(challenge.getAttempts() + 1);
-            double accuracy = record.getAccuracyRate() != null ? record.getAccuracyRate() : 0;
-            if (challenge.getBestAccuracy() == null || accuracy > challenge.getBestAccuracy()) {
-                challenge.setBestAccuracy(accuracy);
-            }
-            int timeSeconds = record.getDurationSeconds() != null ? record.getDurationSeconds() : 0;
-            if (timeSeconds > 0 && (challenge.getBestTimeSeconds() == null || timeSeconds < challenge.getBestTimeSeconds())) {
-                challenge.setBestTimeSeconds(timeSeconds);
-            }
-            dailyChallengeRepository.save(challenge);
-        }
+        streakService.recordTraining(today);
+        dailyChallengeService.recordResult(saved, today);
+        achievementService.refresh();
+        return saved;
     }
 
     public List<TrainRecord> getByModule(String moduleType) {
@@ -73,32 +51,5 @@ public class TrainRecordService {
 
     public List<TrainRecord> getRecent() {
         return trainRecordRepository.findTop20ByOrderByCreatedTimeDesc();
-    }
-
-    private void updateStreak() {
-        StreakRecord streak = streakRecordRepository.findFirstByOrderByIdAsc()
-                .orElseGet(() -> {
-                    StreakRecord sr = new StreakRecord();
-                    sr.setCurrentStreak(0);
-                    sr.setLongestStreak(0);
-                    return sr;
-                });
-
-        LocalDate today = LocalDate.now();
-        if (streak.getLastTrainDate() == null) {
-            streak.setCurrentStreak(1);
-            streak.setLongestStreak(1);
-        } else if (streak.getLastTrainDate().equals(today)) {
-            return; // Already updated today
-        } else if (streak.getLastTrainDate().equals(today.minusDays(1))) {
-            streak.setCurrentStreak(streak.getCurrentStreak() + 1);
-            if (streak.getCurrentStreak() > streak.getLongestStreak()) {
-                streak.setLongestStreak(streak.getCurrentStreak());
-            }
-        } else {
-            streak.setCurrentStreak(1);
-        }
-        streak.setLastTrainDate(today);
-        streakRecordRepository.save(streak);
     }
 }
