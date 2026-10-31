@@ -49,7 +49,7 @@
   - 多个模块（如 [`NamesAndFaces.jsx`](../frontend/src/modules/NamesAndFaces.jsx)、`TextMemory`、`SpeedNumbers`、`BinaryDatesTrainer`）在 `setCountdown(prev => { ...; goToRecall(); ... })` 中调用切换状态函数。React StrictMode 下更新函数会被调用两次，存在重复触发风险。
   - 建议：倒计时到 0 用独立 `useEffect` 监听 `countdown === 0` 再切换阶段。
 
-- [ ] **B7 (P2) 洗牌算法有偏差**
+- [x] **B7 (P2) 洗牌算法有偏差**
   - `NamesAndFaces.jsx` 使用 `sort(() => Math.random() - 0.5)`，分布不均匀。项目中已有 Fisher–Yates 实现（`ObjectTrainer.shuffle`、`BinaryDatesTrainer.shuffleArray`），应抽为公共工具。
 
 - [ ] **B8 (P2) 前端错误提示会被通知两次 / 非 JSON 响应提示不友好**
@@ -161,11 +161,13 @@
 
 ## 6. 工程化
 
-- [ ] **E1 (P1) 测试**
+- [x] **E1 (P1) 测试**
+  - ✅ 已完成基础设施：后端 `src/test`（`test` profile 使用内存数据库）覆盖种子数据、连续训练/每日挑战、物品权重/导入/错题、图片上传校验；前端 Vitest 覆盖 `utils/random`、API 客户端与 App 冒烟测试。后续每修一个 Bug 补对应测试。
   - 后端：添加 `spring-boot-starter-test`，优先覆盖连续训练 / 每日挑战 / 成就（跨天逻辑最易出错）、物品权重边界、上传校验。
   - 前端：Vitest + React Testing Library，覆盖共享 hooks 与评分逻辑。
 
-- [ ] **E2 (P1) Lint / 格式化**：前端 ESLint（含 `react-hooks` 规则，可发现大量依赖数组问题）+ Prettier；后端可加 Spotless 或 Checkstyle。
+- [x] **E2 (P1) Lint / 格式化**：前端 ESLint（含 `react-hooks` 规则，可发现大量依赖数组问题）+ Prettier；后端可加 Spotless 或 Checkstyle。
+  - ✅ 前端 ESLint 9 已接入，现有错误已清零；剩余 5 个 `exhaustive-deps` 警告即 B6，留到前端重构时处理。Prettier / 后端格式化暂未引入（避免一次性大规模格式化 diff）。
 
 - [x] **E3 (P1) Maven Wrapper**：添加 `mvnw`，避免依赖全局 Maven；启动脚本改用 wrapper。
 

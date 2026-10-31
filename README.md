@@ -26,6 +26,21 @@ start-dev.cmd
 
 ---
 
+## 测试与代码检查
+
+```bash
+# 后端测试（使用内存数据库，不会影响真实数据）
+cd backend
+mvnw.cmd test
+
+# 前端
+cd frontend
+npm run lint   # ESLint
+npm test       # Vitest
+```
+
+---
+
 ## 物品编码（00–99 Object System）导入格式
 
 在「物品编码配置」页面点击「导入 JSON」按钮，粘贴以下任意格式的 JSON 即可批量导入。

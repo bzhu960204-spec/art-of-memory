@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
 
 const STATES = { CONFIG: 'CONFIG', FLASHING: 'FLASHING', RECALL: 'RECALL', RESULTS: 'RESULTS' }

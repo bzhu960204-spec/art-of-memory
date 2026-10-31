@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
+import { shuffle } from '../utils/random'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULTS: 'RESULTS' }
 
@@ -90,7 +91,7 @@ export default function NamesAndFaces() {
 
   const goToRecall = () => {
     // Shuffle the order for recall
-    const shuffled = [...people].sort(() => Math.random() - 0.5)
+    const shuffled = shuffle(people)
     setShuffledPeople(shuffled)
     setUserAnswers(new Array(shuffled.length).fill(''))
     setState(STATES.RECALL)

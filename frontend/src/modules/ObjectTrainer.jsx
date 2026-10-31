@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../api'
+import { weightedSample } from '../utils/random'
 
 // ─── 状态机 ───────────────────────────────────────────────
 const S = {
@@ -7,54 +8,6 @@ const S = {
   SHOWING_NUMBER: 'SHOWING_NUMBER',
   SHOWING_ANSWER: 'SHOWING_ANSWER',
   COMPLETE: 'COMPLETE',
-}
-
-// ─── 工具函数 ──────────────────────────────────────────────
-
-/** Fisher-Yates shuffle（原地） */
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr
-}
-
-/**
- * 按权重进行不重复采样。
- * 权重高的卡片在池中出现次数多，被优先抽到的概率更高。
- * @param {object[]} items  含 weight 字段的卡片数组
- * @param {number}   count  抽取数量
- */
-function weightedSample(items, count) {
-  // 构建加权池（每张卡重复 weight 次，最多 5 次）
-  const pool = []
-  items.forEach(item => {
-    const slots = Math.min(item.weight, 5)
-    for (let i = 0; i < slots; i++) pool.push(item)
-  })
-  shuffle(pool)
-
-  // 去重并取前 count 张
-  const seen = new Set()
-  const result = []
-  for (const item of pool) {
-    if (!seen.has(item.numberString)) {
-      seen.add(item.numberString)
-      result.push(item)
-    }
-    if (result.length >= count) break
-  }
-
-  // 若池中不够（理论上不会），用剩余随机补足
-  if (result.length < count) {
-    const rest = shuffle(items.filter(i => !seen.has(i.numberString)))
-    for (const item of rest) {
-      result.push(item)
-      if (result.length >= count) break
-    }
-  }
-  return result
 }
 
 // ─── 常量 ─────────────────────────────────────────────────
@@ -133,7 +86,7 @@ export default function ObjectTrainer() {
   const isProficientZone = currentMs < PROFICIENT_THRESHOLD_MS
 
   // ── 通用：进入下一题 / 结束 ──
-  const advance = useCallback((newQueue, newIdx, newResults, rating) => {
+  const advance = useCallback((newQueue, newIdx, newResults) => {
     const isLast = newIdx >= newQueue.length
     if (isLast) {
       // 计算统计
@@ -192,7 +145,7 @@ export default function ObjectTrainer() {
     const prev = pendingWeights.current[card.numberString] ?? 0
     pendingWeights.current[card.numberString] = Math.max(-card.weight + 1, prev - 1)
 
-    advance(queue, queueIdx + 1, newResults, 1)
+    advance(queue, queueIdx + 1, newResults)
   }, [state, queue, queueIdx, results, startTime, advance])
 
   // ── 翻牌（查看答案）──
@@ -223,7 +176,7 @@ export default function ObjectTrainer() {
       pendingWeights.current[card.numberString] = prev + 3
     }
 
-    advance(newQueue, queueIdx + 1, newResults, rating)
+    advance(newQueue, queueIdx + 1, newResults)
   }, [state, queue, queueIdx, results, startTime, advance])
 
   // ── 键盘快捷键 ──

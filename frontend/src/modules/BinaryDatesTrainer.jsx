@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { api } from '../api'
+import { shuffle } from '../utils/random'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULTS: 'RESULTS' }
 
@@ -48,15 +49,6 @@ function generateBinaryNumbers(count, digits) {
   return numbers
 }
 
-function shuffleArray(arr) {
-  const shuffled = [...arr]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
-}
-
 export default function BinaryDatesTrainer() {
   const [mode, setMode] = useState(MODES.BINARY)
   const [state, setState] = useState(STATES.CONFIG)
@@ -73,7 +65,7 @@ export default function BinaryDatesTrainer() {
     if (mode === MODES.BINARY) {
       generated = generateBinaryNumbers(config.count, config.digits)
     } else {
-      generated = shuffleArray(HISTORICAL_EVENTS).slice(0, config.count)
+      generated = shuffle(HISTORICAL_EVENTS).slice(0, config.count)
     }
     setItems(generated)
     setCountdown(config.memorizeTime)
@@ -103,7 +95,7 @@ export default function BinaryDatesTrainer() {
   }, [state])
 
   const goToRecall = () => {
-    const shuffled = shuffleArray(items)
+    const shuffled = shuffle(items)
     setShuffledItems(shuffled)
     setUserAnswers(new Array(shuffled.length).fill(''))
     setState(STATES.RECALL)

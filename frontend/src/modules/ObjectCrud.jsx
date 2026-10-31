@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 
 const IMPORT_TEMPLATE = `[
@@ -86,7 +86,7 @@ export default function ObjectCrud() {
       setCodes(prev => prev.map(c => c.numberString === numberString ? updated : c))
       setEditingNum(null)
       showToast(`${numberString} 已保存`)
-    } catch (e) {
+    } catch {
       showToast('保存失败', 'error')
     } finally {
       setSaving(false)

@@ -56,7 +56,6 @@ export default function AnalyticsDashboard() {
     )
   }
 
-  const maxSessions = Math.max(...(trend.map(t => t.sessions) || [1]), 1)
   const maxAccuracy = 1
 
   return (
