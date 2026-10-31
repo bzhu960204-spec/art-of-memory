@@ -10,25 +10,35 @@ function notifyError(msg) {
   errorListeners.forEach(fn => fn(msg));
 }
 
-async function request(url, options = {}) {
-  try {
-    const response = await fetch(`${API_BASE}${url}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    });
-    const result = await response.json();
-    if (result.code === 200) {
-      return result.data;
-    }
-    const errMsg = result.msg || '请求失败';
-    notifyError(errMsg);
-    throw new Error(errMsg);
-  } catch (e) {
-    if (e.message && !e.message.includes('请求失败')) {
-      notifyError(e.message === 'Failed to fetch' ? '网络连接失败，请检查后端服务' : e.message);
-    }
-    throw e;
+async function request(url, options = {}, context) {
+  const fail = (msg) => {
+    const full = context ? `${context}：${msg}` : msg
+    notifyError(full)
+    return new Error(full)
   }
+
+  const isForm = options.body instanceof FormData
+  let response
+  try {
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      // Let the browser set the multipart boundary for FormData
+      headers: isForm ? options.headers : { 'Content-Type': 'application/json', ...options.headers },
+    });
+  } catch {
+    throw fail('网络连接失败，请检查后端服务');
+  }
+
+  let result
+  try {
+    result = await response.json();
+  } catch {
+    throw fail(`服务器响应异常（HTTP ${response.status}）`);
+  }
+  if (result.code === 200) {
+    return result.data;
+  }
+  throw fail(result.msg || '请求失败');
 }
 
 export const api = {
@@ -36,7 +46,7 @@ export const api = {
   postPaoReview: (items) => request('/pao/review', { method: 'POST', body: JSON.stringify(items) }),
   getWordsRandom: (limit = 20) => request(`/words/random?limit=${limit}`),
   getCardsShuffle: () => request('/cards/shuffle'),
-  saveRecord: (record) => request('/records/save', { method: 'POST', body: JSON.stringify(record) }),
+  saveRecord: (record) => request('/records/save', { method: 'POST', body: JSON.stringify(record) }, '训练成绩保存失败'),
   getRecords: (module) => request(`/records/list${module ? `?module=${module}` : ''}`),
   // Object codes (00-99 Object System)
   getObjectAll: () => request('/objects/all'),
@@ -47,7 +57,7 @@ export const api = {
   postObjectImport: (items) => request('/objects/import', { method: 'POST', body: JSON.stringify(items) }),
   // Palace images
   getPalaceList: () => request('/palaces/list'),
-  uploadPalaceImage: (formData) => fetch(`${API_BASE}/palaces/upload`, { method: 'POST', body: formData }).then(r => r.json()).then(r => { if (r.code === 200) return r.data; const msg = r.msg || '上传失败'; notifyError(msg); throw new Error(msg) }),
+  uploadPalaceImage: (formData) => request('/palaces/upload', { method: 'POST', body: formData }, '上传失败'),
   deletePalaceImage: (id) => request(`/palaces/${id}`, { method: 'DELETE' }),
   // Analytics
   getAnalyticsTrend: (days = 30, module) => request(`/analytics/trend?days=${days}${module ? `&module=${module}` : ''}`),

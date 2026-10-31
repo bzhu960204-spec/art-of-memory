@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { api } from '../api'
+import { useCountdown } from '../hooks/useCountdown'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULTS: 'RESULTS' }
 const ROWS = 10
@@ -22,43 +23,20 @@ export default function SpeedNumbers() {
   const [timeLimit, setTimeLimit] = useState(60)
   const [matrix, setMatrix] = useState([])
   const [userMatrix, setUserMatrix] = useState([])
-  const [countdown, setCountdown] = useState(0)
   const [results, setResults] = useState(null)
-  const countdownRef = useRef(null)
+  const { remaining: countdown, start: startCountdown, stop: stopCountdown } = useCountdown(() => setState(STATES.RECALL))
   const inputRefs = useRef([])
 
   const startTraining = () => {
     const m = generateMatrix()
     setMatrix(m)
     setUserMatrix(Array.from({ length: ROWS }, () => new Array(COLS).fill('')))
-    setCountdown(timeLimit)
+    startCountdown(timeLimit)
     setState(STATES.MEMORIZE)
   }
 
-  useEffect(() => {
-    if (state === STATES.MEMORIZE && countdown > 0) {
-      countdownRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownRef.current)
-            countdownRef.current = null
-            setState(STATES.RECALL)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      return () => {
-        if (countdownRef.current) {
-          clearInterval(countdownRef.current)
-          countdownRef.current = null
-        }
-      }
-    }
-  }, [state])
-
   const finishMemorize = () => {
-    clearInterval(countdownRef.current)
+    stopCountdown()
     setState(STATES.RECALL)
   }
 
@@ -153,7 +131,7 @@ export default function SpeedNumbers() {
   }
 
   const reset = () => {
-    clearInterval(countdownRef.current)
+    stopCountdown()
     setState(STATES.CONFIG)
     setMatrix([])
     setUserMatrix([])

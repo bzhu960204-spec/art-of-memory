@@ -1,21 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-
-const MODULE_NAMES = {
-  PAO: '数字编码',
-  OBJECT: '物品编码',
-  WORDS: '随机词组',
-  CARDS: '扑克记忆',
-  NUMBERS: '数字马拉松',
-}
-
-const MODULE_COLORS = {
-  PAO: 'cyan',
-  OBJECT: 'green',
-  WORDS: 'purple',
-  CARDS: 'pink',
-  NUMBERS: 'yellow',
-}
+import { moduleTypeInfo } from '../constants/modules'
 
 export default function AnalyticsDashboard() {
   const [summary, setSummary] = useState(null)
@@ -26,27 +11,30 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
-  }, [days])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [s, t, w, b] = await Promise.all([
-        api.getAnalyticsSummary(days),
-        api.getAnalyticsTrend(days),
-        api.getAnalyticsWeakest(10),
-        api.getAnalyticsBests(),
-      ])
-      setSummary(s)
-      setTrend(t)
-      setWeakest(w)
-      setBests(b)
-    } catch (e) {
-      console.error('Failed to load analytics:', e)
+    let cancelled = false
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        const [s, t, w, b] = await Promise.all([
+          api.getAnalyticsSummary(days),
+          api.getAnalyticsTrend(days),
+          api.getAnalyticsWeakest(10),
+          api.getAnalyticsBests(),
+        ])
+        if (cancelled) return
+        setSummary(s)
+        setTrend(t)
+        setWeakest(w)
+        setBests(b)
+      } catch (e) {
+        console.error('Failed to load analytics:', e)
+      }
+      if (!cancelled) setLoading(false)
     }
-    setLoading(false)
-  }
+    loadData()
+    // Ignore responses for an outdated `days` selection
+    return () => { cancelled = true }
+  }, [days])
 
   if (loading) {
     return (
@@ -145,18 +133,18 @@ export default function AnalyticsDashboard() {
           ) : (
             <div className="space-y-3">
               {summary.modules.map(mod => {
-                const color = MODULE_COLORS[mod.moduleType] || 'gray'
+                const info = moduleTypeInfo(mod.moduleType)
                 return (
                   <div key={mod.moduleType} className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-300">{MODULE_NAMES[mod.moduleType] || mod.moduleType}</span>
-                      <span className={`text-${color}-400 font-medium`}>
+                      <span className="text-gray-300">{info.label}</span>
+                      <span className={`${info.text} font-medium`}>
                         {Math.round(mod.avgAccuracy * 100)}% · {mod.sessions}次
                       </span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-2">
                       <div
-                        className={`bg-${color}-500 h-2 rounded-full transition-all`}
+                        className={`${info.bar} h-2 rounded-full transition-all`}
                         style={{ width: `${mod.avgAccuracy * 100}%` }}
                       />
                     </div>
@@ -181,7 +169,7 @@ export default function AnalyticsDashboard() {
                   <span className="text-red-400 font-bold w-6">{i + 1}</span>
                   <span className="flex-1 text-gray-200 font-mono">{item.itemContent}</span>
                   <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-400">
-                    {MODULE_NAMES[item.moduleType] || item.moduleType}
+                    {moduleTypeInfo(item.moduleType).label}
                   </span>
                   <span className="text-red-400 font-bold">{item.errorCount}次错误</span>
                 </div>
@@ -199,7 +187,7 @@ export default function AnalyticsDashboard() {
             <div className="space-y-3">
               {Object.entries(bests).map(([mod, data]) => (
                 <div key={mod} className="bg-gray-800/50 rounded-lg p-3">
-                  <div className="text-sm text-gray-400 mb-1">{MODULE_NAMES[mod] || mod}</div>
+                  <div className="text-sm text-gray-400 mb-1">{moduleTypeInfo(mod).label}</div>
                   <div className="flex gap-4">
                     <div>
                       <span className="text-green-400 font-bold text-lg">

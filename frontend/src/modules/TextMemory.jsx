@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { api } from '../api'
+import { useCountdown } from '../hooks/useCountdown'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULTS: 'RESULTS' }
 
@@ -38,8 +39,7 @@ export default function TextMemory() {
   const [blankedText, setBlankedText] = useState([])
   const [userAnswers, setUserAnswers] = useState([])
   const [results, setResults] = useState(null)
-  const [countdown, setCountdown] = useState(0)
-  const timerRef = useRef(null)
+  const { remaining: countdown, start: startCountdown, stop: stopCountdown } = useCountdown(() => goToRecall())
 
   const startTraining = () => {
     let selectedText, selectedTitle
@@ -52,31 +52,9 @@ export default function TextMemory() {
     }
     setText(selectedText)
     setTitle(selectedTitle)
-    setCountdown(config.memorizeTime)
+    startCountdown(config.memorizeTime)
     setState(STATES.MEMORIZE)
   }
-
-  useEffect(() => {
-    if (state === STATES.MEMORIZE && countdown > 0) {
-      timerRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current)
-            timerRef.current = null
-            goToRecall()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current)
-          timerRef.current = null
-        }
-      }
-    }
-  }, [state])
 
   const goToRecall = () => {
     // Create blanks: remove ~40% of characters randomly (in chunks)
@@ -99,8 +77,7 @@ export default function TextMemory() {
   }
 
   const finishMemorize = () => {
-    clearInterval(timerRef.current)
-    timerRef.current = null
+    stopCountdown()
     goToRecall()
   }
 
@@ -136,6 +113,7 @@ export default function TextMemory() {
   }
 
   const reset = () => {
+    stopCountdown()
     setState(STATES.CONFIG)
     setText('')
     setBlankedText([])

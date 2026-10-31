@@ -1,66 +1,55 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { onApiError } from './api'
-import PaoTrainer from './modules/PaoTrainer'
-import WordsRecall from './modules/WordsRecall'
-import CardMemorization from './modules/CardMemorization'
-import SpeedNumbers from './modules/SpeedNumbers'
-import NumberMemory from './modules/NumberMemory'
-import ObjectTrainer from './modules/ObjectTrainer'
-import ObjectCrud from './modules/ObjectCrud'
-import PalaceGallery from './modules/PalaceGallery'
-import AnalyticsDashboard from './modules/AnalyticsDashboard'
-import NamesAndFaces from './modules/NamesAndFaces'
-import TextMemory from './modules/TextMemory'
-import BinaryDatesTrainer from './modules/BinaryDatesTrainer'
-import ChallengeAchievements from './modules/ChallengeAchievements'
+import { NAV_ITEMS } from './constants/modules'
+import { useHashRoute } from './hooks/useHashRoute'
 
-const modules = [
-  { id: 'dashboard', name: '训练仪表盘', icon: '📊', desc: 'Analytics Dashboard' },
-  { id: 'pao', name: '数字编码大师', icon: '🔢', desc: 'PAO System' },
-  { id: 'object', name: '物品编码系统', icon: '🎯', desc: 'Object System 00-99' },
-  { id: 'words', name: '随机词组闪训', icon: '📝', desc: 'Words Recall' },
-  { id: 'cards', name: '虚拟马拉松扑克', icon: '🃏', desc: 'Card Memorization' },
-  { id: 'numbers', name: '数字马拉松', icon: '⚡', desc: 'Speed Numbers' },
-  { id: 'numMemory', name: '数字记忆训练', icon: '🧠', desc: 'Number Memory' },
-  { id: 'names', name: '人脸名字配对', icon: '👤', desc: 'Names & Faces' },
-  { id: 'textMemory', name: '文章段落记忆', icon: '📖', desc: 'Text Memory' },
-  { id: 'binary', name: '二进制/日期', icon: '🎲', desc: 'Binary & Dates' },
-  { id: 'palace', name: '记忆宫殿图库', icon: '🏛️', desc: 'Memory Palace Gallery' },
-  { id: 'challenge', name: '挑战与成就', icon: '🏆', desc: 'Challenge & Achievements' },
-]
+const PAGES = {
+  dashboard: lazy(() => import('./modules/AnalyticsDashboard')),
+  pao: lazy(() => import('./modules/PaoTrainer')),
+  object: lazy(() => import('./modules/ObjectTrainer')),
+  'object/config': lazy(() => import('./modules/ObjectCrud')),
+  words: lazy(() => import('./modules/WordsRecall')),
+  cards: lazy(() => import('./modules/CardMemorization')),
+  numbers: lazy(() => import('./modules/SpeedNumbers')),
+  numMemory: lazy(() => import('./modules/NumberMemory')),
+  names: lazy(() => import('./modules/NamesAndFaces')),
+  textMemory: lazy(() => import('./modules/TextMemory')),
+  binary: lazy(() => import('./modules/BinaryDatesTrainer')),
+  palace: lazy(() => import('./modules/PalaceGallery')),
+  challenge: lazy(() => import('./modules/ChallengeAchievements')),
+}
+
+const DEFAULT_ROUTE = 'dashboard'
+
+function Loading() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-cyan-400 text-xl animate-pulse">加载中...</div>
+    </div>
+  )
+}
 
 export default function App() {
-  const [activeModule, setActiveModule] = useState('dashboard')
-  // object 模块的子视图: 'train' | 'config'
-  const [objectView, setObjectView] = useState('train')
+  const [route, navigate] = useHashRoute(DEFAULT_ROUTE)
+  const pageKey = PAGES[route] ? route : DEFAULT_ROUTE
+  const [activeModule, subView] = pageKey.split('/')
+  const Page = PAGES[pageKey]
+
   // Toast notification for API errors
   const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
 
   useEffect(() => {
     const unsubscribe = onApiError((msg) => {
       setToast(msg)
-      setTimeout(() => setToast(null), 4000)
+      clearTimeout(toastTimer.current)
+      toastTimer.current = setTimeout(() => setToast(null), 4000)
     })
-    return unsubscribe
-  }, [])
-
-  const renderModule = () => {
-    switch (activeModule) {
-      case 'dashboard': return <AnalyticsDashboard />
-      case 'pao': return <PaoTrainer />
-      case 'object': return objectView === 'train' ? <ObjectTrainer /> : <ObjectCrud />
-      case 'words': return <WordsRecall />
-      case 'cards': return <CardMemorization />
-      case 'numbers': return <SpeedNumbers />
-      case 'numMemory': return <NumberMemory />
-      case 'names': return <NamesAndFaces />
-      case 'textMemory': return <TextMemory />
-      case 'binary': return <BinaryDatesTrainer />
-      case 'palace': return <PalaceGallery />
-      case 'challenge': return <ChallengeAchievements />
-      default: return <AnalyticsDashboard />
+    return () => {
+      unsubscribe()
+      clearTimeout(toastTimer.current)
     }
-  }
+  }, [])
 
   return (
     <div className="flex h-screen bg-gray-950">
@@ -71,17 +60,18 @@ export default function App() {
           <p className="text-xs text-gray-500 mt-1">Lightning Memory Master</p>
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {modules.map((m) => (
+          {NAV_ITEMS.map((m) => (
             <div key={m.id}>
               <button
-                onClick={() => setActiveModule(m.id)}
+                onClick={() => navigate(m.id)}
+                aria-current={activeModule === m.id ? 'page' : undefined}
                 className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
                   activeModule === m.id
                     ? 'bg-cyan-900/40 text-cyan-300 border border-cyan-700'
                     : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 }`}
               >
-                <span className="text-lg mr-2">{m.icon}</span>
+                <span className="text-lg mr-2" aria-hidden="true">{m.icon}</span>
                 <span className="text-sm font-medium">{m.name}</span>
               </button>
 
@@ -89,9 +79,9 @@ export default function App() {
               {m.id === 'object' && activeModule === 'object' && (
                 <div className="flex mt-1 ml-4 gap-1">
                   <button
-                    onClick={() => setObjectView('train')}
+                    onClick={() => navigate('object')}
                     className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-                      objectView === 'train'
+                      !subView
                         ? 'bg-cyan-800/50 text-cyan-300'
                         : 'text-gray-500 hover:text-gray-300'
                     }`}
@@ -99,9 +89,9 @@ export default function App() {
                     训练
                   </button>
                   <button
-                    onClick={() => setObjectView('config')}
+                    onClick={() => navigate('object/config')}
                     className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-                      objectView === 'config'
+                      subView === 'config'
                         ? 'bg-cyan-800/50 text-cyan-300'
                         : 'text-gray-500 hover:text-gray-300'
                     }`}
@@ -120,12 +110,14 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {renderModule()}
+        <Suspense fallback={<Loading />}>
+          <Page key={pageKey} />
+        </Suspense>
       </main>
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-red-900/90 border border-red-700 text-red-200 px-5 py-3 rounded-lg shadow-xl animate-pulse max-w-sm">
+        <div role="alert" className="fixed top-4 right-4 z-50 bg-red-900/90 border border-red-700 text-red-200 px-5 py-3 rounded-lg shadow-xl animate-pulse max-w-sm">
           <div className="flex items-center gap-2">
             <span className="text-red-400">⚠</span>
             <span className="text-sm">{toast}</span>

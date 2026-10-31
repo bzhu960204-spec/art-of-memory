@@ -12,6 +12,7 @@ public enum ModuleType {
     WORDS("随机词组"),
     CARDS("扑克记忆"),
     NUMBERS("数字马拉松"),
+    NUM_MEMORY("数字记忆"),
     NAMES("人脸名字"),
     TEXT("文章段落"),
     BINARY("二进制"),

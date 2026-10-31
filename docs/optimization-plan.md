@@ -38,22 +38,25 @@
   - `POST /api/records/save` 直接以 `TrainRecord` 实体作为 `@RequestBody`，请求中若带 `id`，JPA 会执行 merge 覆盖已有记录。
   - 建议：引入请求 DTO（不含 `id`/`createdTime`），并校验 `moduleType` 必须是已知枚举、数值字段非负。
 
-- [ ] **B4 (P1) 部分模块的训练数据未纳入统计**
+- [x] **B4 (P1) 部分模块的训练数据未纳入统计**
   - 前端会保存 `TEXT`、`NAMES`、`BINARY`、`DATES` 记录，但 [`AnalyticsController.getBests`](../backend/src/main/java/com/memory/controller/AnalyticsController.java) 只统计 5 个模块，仪表盘 / 成就页的 `MODULE_NAMES` 也只有 5 个。
   - [`NumberMemory.jsx`](../frontend/src/modules/NumberMemory.jsx) 只把成绩写在 `localStorage`，从不调用 `saveRecord`，仪表盘看不到。
+  - ✅ 已完成：前后端均覆盖 10 个模块类型；数字记忆训练新增 `NUM_MEMORY`，按逐位正确率上报（本地历史记录保留）。
 
-- [ ] **B5 (P1) 物品编码权重在切换模块时丢失**
+- [x] **B5 (P1) 物品编码权重在切换模块时丢失**
   - [`ObjectTrainer.jsx`](../frontend/src/modules/ObjectTrainer.jsx) 仅在 `beforeunload` 时用 `sendBeacon` 补交权重；在侧边栏切换模块会卸载组件，但不会触发 `beforeunload`，未完成的一轮权重变更丢失。
   - 建议：在组件卸载的 cleanup 中也提交，或每题评分后即时提交（数据量很小）。
+  - ✅ 已完成：卸载时也会提交。另修复了一个相关 Bug：一轮结束后权重已提交但未清空，此时关闭标签页会被 `sendBeacon` 再提交一次（权重变化被重复计算）。
 
-- [ ] **B6 (P1) 在 `setState` 更新函数内产生副作用**
+- [x] **B6 (P1) 在 `setState` 更新函数内产生副作用**
   - 多个模块（如 [`NamesAndFaces.jsx`](../frontend/src/modules/NamesAndFaces.jsx)、`TextMemory`、`SpeedNumbers`、`BinaryDatesTrainer`）在 `setCountdown(prev => { ...; goToRecall(); ... })` 中调用切换状态函数。React StrictMode 下更新函数会被调用两次，存在重复触发风险。
   - 建议：倒计时到 0 用独立 `useEffect` 监听 `countdown === 0` 再切换阶段。
+  - ✅ 已完成：新增 `hooks/useCountdown`，4 个模块统一使用；ESLint `exhaustive-deps` 警告已全部清零。
 
 - [x] **B7 (P2) 洗牌算法有偏差**
   - `NamesAndFaces.jsx` 使用 `sort(() => Math.random() - 0.5)`，分布不均匀。项目中已有 Fisher–Yates 实现（`ObjectTrainer.shuffle`、`BinaryDatesTrainer.shuffleArray`），应抽为公共工具。
 
-- [ ] **B8 (P2) 前端错误提示会被通知两次 / 非 JSON 响应提示不友好**
+- [x] **B8 (P2) 前端错误提示会被通知两次 / 非 JSON 响应提示不友好**
   - [`api/index.js`](../frontend/src/api/index.js) 中业务错误先 `notifyError` 再 `throw`，`catch` 里只要消息不含"请求失败"就会再通知一次。
   - 后端未启动时代理返回 HTML/空响应，`response.json()` 抛出 `Unexpected token` 之类的原始错误。
   - `uploadPalaceImage` 绕过了统一的 `request()`。
@@ -135,21 +138,25 @@
 
 ## 5. 前端架构与代码质量
 
-- [ ] **F1 (P1) 抽取共享常量**
+- [x] **F1 (P1) 抽取共享常量**
   - `MODULE_NAMES` / `MODULE_COLORS` / 模块图标在 `App.jsx`、`AnalyticsDashboard.jsx`、`ChallengeAchievements.jsx` 中各写一份且不一致（ChallengeAchievements 里还用了一串三元表达式选图标）。
   - 建议新建 `src/constants/modules.js` 作为唯一来源（或从后端 A2 获取）。
+  - ✅ 已完成。另发现并修复：仪表盘用 `` `bg-${color}-500` `` 动态拼接 Tailwind 类名，Tailwind 无法识别，进度条颜色可能缺失；现改为完整类名。
 
 - [ ] **F2 (P1) 抽取通用 Hook 与工具**
   - `useCountdown`（倒计时，至少 5 个模块重复实现）、`useStopwatch`（PAO/Object/Cards 用 RAF 计时）、`useHotkeys`（键盘监听）、`shuffle`（Fisher–Yates）、`useTrainingSession`（CONFIG → MEMORIZE → RECALL → RESULTS 状态机 + 保存记录）。
   - 可显著缩短每个模块文件（目前多在 9~20 KB）。
+  - 🔶 部分完成：`useCountdown`、`useHashRoute`、`utils/random` 已抽出；`useStopwatch` / `useHotkeys` / `useTrainingSession` 待做（可与 F5 一起处理）。
 
-- [ ] **F3 (P1) 不再静默吞错**
+- [x] **F3 (P1) 不再静默吞错**
   - 大量 `.catch(console.error)` / `.catch(() => {})`：保存失败时用户毫无感知，训练记录可能丢失。至少应提示"成绩未保存，点击重试"。
   - Toast 定时器未在新错误到来时重置，可改为队列或简单的 Toast 组件。
+  - ✅ 已完成：所有请求错误统一弹出提示（只提示一次），保存成绩失败时提示"训练成绩保存失败：…"；Toast 定时器已正确重置。"点击重试"暂未实现。
 
-- [ ] **F4 (P1) 引入路由与懒加载**
+- [x] **F4 (P1) 引入路由与懒加载**
   - 当前用 `activeModule` 状态切换页面：刷新回到首页、无法收藏/分享某个模块、浏览器后退无效。
   - 建议使用 `react-router`（或轻量的 hash 路由），并对模块使用 `React.lazy` + `Suspense` 按需加载（当前打包体积约 250 KB）。
+  - ✅ 已完成：轻量 hash 路由（如 `#/pao`、`#/object/config`，无新依赖）+ 懒加载，首屏 JS 从 251 KB 降到 151 KB。
 
 - [ ] **F5 (P2) 计时器渲染性能**
   - PAO / Object / Cards 训练时用 `requestAnimationFrame` 每帧 `setElapsed`，导致整个大组件每秒重渲染约 60 次。

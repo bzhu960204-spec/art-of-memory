@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { moduleTypeInfo } from '../constants/modules'
 
 export default function ChallengeAchievements() {
   const [tab, setTab] = useState('daily') // 'daily' | 'achievements' | 'streak' | 'records'
@@ -43,11 +44,6 @@ export default function ChallengeAchievements() {
     )
   }
 
-  const MODULE_NAMES = {
-    PAO: '数字编码', OBJECT: '物品编码', WORDS: '随机词组',
-    CARDS: '扑克记忆', NUMBERS: '数字马拉松',
-  }
-
   return (
     <div className="flex flex-col h-full p-6 overflow-auto">
       <div className="flex items-center justify-between mb-6">
@@ -84,7 +80,7 @@ export default function ChallengeAchievements() {
               <div className="flex items-center gap-6">
                 <div className="flex-1">
                   <div className="text-cyan-400 text-2xl font-bold mb-1">
-                    {MODULE_NAMES[daily.moduleType] || daily.moduleType}
+                    {moduleTypeInfo(daily.moduleType).label}
                   </div>
                   <div className="text-gray-400 text-sm">
                     日期: {daily.challengeDate} · 已尝试 {daily.attempts} 次
@@ -99,10 +95,7 @@ export default function ChallengeAchievements() {
                   )}
                 </div>
                 <div className="text-6xl">
-                  {daily.moduleType === 'NUMBERS' ? '⚡' :
-                   daily.moduleType === 'WORDS' ? '📝' :
-                   daily.moduleType === 'CARDS' ? '🃏' :
-                   daily.moduleType === 'PAO' ? '🔢' : '🎯'}
+                  {moduleTypeInfo(daily.moduleType).icon}
                 </div>
               </div>
             ) : (
@@ -124,7 +117,7 @@ export default function ChallengeAchievements() {
                   <div key={h.id} className="flex items-center gap-4 bg-gray-800/50 rounded-lg px-4 py-3">
                     <span className="text-gray-400 font-mono text-sm w-24">{h.challengeDate}</span>
                     <span className="text-white font-medium flex-1">
-                      {MODULE_NAMES[h.moduleType] || h.moduleType}
+                      {moduleTypeInfo(h.moduleType).label}
                     </span>
                     <span className="text-gray-400 text-sm">{h.attempts}次尝试</span>
                     {h.bestAccuracy != null && (
@@ -154,7 +147,7 @@ export default function ChallengeAchievements() {
                     {r.createdTime ? r.createdTime.replace('T', ' ').slice(0, 16) : ''}
                   </span>
                   <span className="text-white font-medium flex-1">
-                    {MODULE_NAMES[r.moduleType] || r.moduleType}
+                    {moduleTypeInfo(r.moduleType).label}
                   </span>
                   <span className="text-gray-400 text-sm">{r.totalItems}项</span>
                   <span className="text-gray-400 text-sm">{r.durationSeconds}秒</span>

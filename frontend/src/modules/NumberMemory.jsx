@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { api } from '../api'
 
 const STATES = { CONFIG: 'CONFIG', MEMORIZE: 'MEMORIZE', RECALL: 'RECALL', RESULT: 'RESULT' }
 const STORAGE_KEY = 'numMemory_records'
@@ -90,6 +91,15 @@ export default function NumberMemory() {
     const updated = saveRecord(digits, memorizeTimeMs, correct)
     setAllRecords(updated)
     setState(STATES.RESULT)
+
+    const correctDigits = [...number].filter((ch, i) => userInput[i] === ch).length
+    api.saveRecord({
+      moduleType: 'NUM_MEMORY',
+      durationSeconds: Math.round(memorizeTimeMs / 1000),
+      accuracyRate: correctDigits / number.length,
+      avgResponseMs: null,
+      totalItems: number.length,
+    }).catch(() => {})
   }
 
   const handleKeyDown = (e) => {

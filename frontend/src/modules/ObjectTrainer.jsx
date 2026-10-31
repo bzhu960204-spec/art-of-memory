@@ -14,6 +14,13 @@ const S = {
 const PROFICIENT_THRESHOLD_MS = 2000   // < 2s 判定为熟练
 const SESSION_SIZE = 20                 // 每轮默认题目数
 
+/** Returns the accumulated weight updates and clears them, so they are submitted exactly once. */
+function takeAll(pendingRef) {
+  const updates = Object.entries(pendingRef.current).map(([numberString, delta]) => ({ numberString, delta }))
+  pendingRef.current = {}
+  return updates
+}
+
 // ─── 组件 ─────────────────────────────────────────────────
 export default function ObjectTrainer() {
   const [allCodes, setAllCodes] = useState([])
@@ -54,19 +61,23 @@ export default function ObjectTrainer() {
 
   useEffect(() => { loadCodes() }, [loadCodes])
 
-  // ── 离开页面时保存未提交的权重变更 ──
+  // ── 离开页面（关闭标签页）或切换到其他模块时，保存未提交的权重变更 ──
   useEffect(() => {
     const handleBeforeUnload = () => {
-      const weightUpdates = Object.entries(pendingWeights.current).map(([num, delta]) => ({
-        numberString: num, delta,
-      }))
+      const weightUpdates = takeAll(pendingWeights)
       if (weightUpdates.length > 0) {
         navigator.sendBeacon('/api/objects/weights',
           new Blob([JSON.stringify(weightUpdates)], { type: 'application/json' }))
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      const weightUpdates = takeAll(pendingWeights)
+      if (weightUpdates.length > 0) {
+        api.postObjectWeights(weightUpdates).catch(() => {})
+      }
+    }
   }, [])
 
   // ── 计时器 RAF ──
@@ -106,10 +117,7 @@ export default function ObjectTrainer() {
       setState(S.COMPLETE)
 
       // 批量提交权重变更
-      const weightUpdates = Object.entries(pendingWeights.current).map(([num, delta]) => ({
-        numberString: num,
-        delta,
-      }))
+      const weightUpdates = takeAll(pendingWeights)
       if (weightUpdates.length > 0) {
         api.postObjectWeights(weightUpdates).catch(console.error)
       }
