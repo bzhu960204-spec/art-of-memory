@@ -73,6 +73,7 @@ Write-Host "=== Lightning Memory Master - Dev Start ===" -ForegroundColor Cyan
 Write-Host "  Backend   : http://localhost:$BackendPort" -ForegroundColor Green
 Write-Host "  Frontend  : http://localhost:$FrontendPort" -ForegroundColor Green
 Write-Host "  H2 Console: http://localhost:$BackendPort/h2-console" -ForegroundColor DarkGray
+Write-Host "  Data dir  : $(if ($env:APP_DATA_DIR) { $env:APP_DATA_DIR } else { Join-Path $backendDir 'data' })" -ForegroundColor DarkGray
 Write-Host ""
 
 # --- Start backend ---
@@ -80,7 +81,8 @@ $backendJob = Start-Job -Name 'lmm-backend' -ScriptBlock {
   param([string]$Dir, [int]$Port, [int]$UiPort)
   Set-Location $Dir
   $env:SERVER_PORT = $Port.ToString()
-  & mvn spring-boot:run "-Dspring-boot.run.jvmArguments=-Dserver.port=$Port -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8" 2>&1 | ForEach-Object { $_.ToString() }
+  if (-not $env:APP_DATA_DIR) { $env:APP_DATA_DIR = Join-Path $Dir 'data' }
+  & (Join-Path $Dir 'mvnw.cmd') spring-boot:run "-Dspring-boot.run.jvmArguments=-Dserver.port=$Port -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8" 2>&1 | ForEach-Object { $_.ToString() }
 } -ArgumentList $backendDir, $BackendPort, $FrontendPort
 
 # --- Wait for backend ---

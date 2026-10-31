@@ -14,3 +14,6 @@ frontend/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime data (H2 database, uploaded images) - back up via the app's export instead
+backend/data/

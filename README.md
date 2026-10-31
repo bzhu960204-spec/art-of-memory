@@ -6,12 +6,23 @@
 
 ## 快速启动
 
+环境要求：JDK 17+、Node.js 18+（无需单独安装 Maven，项目自带 Maven Wrapper `backend/mvnw`）。
+
 ```bash
 # Windows
 start-dev.cmd
 ```
 
 后端运行在 `http://localhost:8080`，前端运行在 `http://localhost:5173`（通过代理统一访问 `http://localhost:5173`）。
+
+---
+
+## 数据存放位置
+
+- H2 数据库与记忆宫殿上传图片都保存在 **数据目录** 中，默认是 `backend/data/`。
+- 可通过环境变量 `APP_DATA_DIR` 指定其他目录（建议使用绝对路径），例如：`$env:APP_DATA_DIR = "D:\memory-data"`。
+- 数据目录 **不会提交到 Git**，请自行备份该目录（或使用下文的「导出 JSON」）。
+- 首次启动时如果数据库为空，会自动写入默认的 PAO 编码、词库和物品编码（见 `backend/src/main/resources/data.sql`），已有数据不会被覆盖。
 
 ---
 
